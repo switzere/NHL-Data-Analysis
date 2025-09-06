@@ -61,12 +61,24 @@ def get_roster_players_df(season, team_slug):
     season_id = int(season)
     return roster_players[(roster_players['season_id'] == season_id) & (roster_players['team_id'] == team_id)]
 
-def make_table(df):
+def make_standings_table(df):
     display_columns = ['Team', 'GP', 'W', 'L', 'OTL', 'PTS']
     rows = []
     for _, row in df.iterrows():
         team_link = dcc.Link(row['Team'], href=f"/team/{row['slug']}/{row['Season']}")
         cells = [html.Td(team_link)] + [html.Td(row[col]) for col in display_columns if col != 'Team']
+        rows.append(html.Tr(cells))
+    return dbc.Table(
+        [html.Thead(html.Tr([html.Th(col) for col in display_columns]))] +
+        [html.Tbody(rows)],
+        striped=True, bordered=True, hover=True, responsive=True
+    )
+
+def make_team_table(df):
+    display_columns = ['firstName','lastName', 'sweaterNumber', 'positionCode', 'heightInCentimeters', 'weightInKilograms', 'birthDate', 'birthCountry']
+    rows = []
+    for _, row in df.iterrows():
+        cells = [html.Td(row[col]) for col in display_columns]
         rows.append(html.Tr(cells))
     return dbc.Table(
         [html.Thead(html.Tr([html.Th(col) for col in display_columns]))] +
