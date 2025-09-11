@@ -1,0 +1,25 @@
+.schedule-container {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 1em;
+    padding: 1em 0;
+    background: #f8f9fa;
+    /* Optional: hide vertical scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f8f9fa;
+}
+
+.game-card {
+    min-width: 220px;
+    max-width: 250px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1em;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    flex: 0 0 auto;
+}
+.game-card:hover {
+    background-color: #e9ecef;
+}

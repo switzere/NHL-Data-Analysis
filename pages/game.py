@@ -1,0 +1,16 @@
+import dash
+from dash import html
+import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output
+from data import get_game_df, make_game_card, get_logo, make_game_card
+
+dash.register_page(__name__, path_template="/game/<game_id>", name="Game Page")
+
+
+def layout(game_id=None, **kwargs):
+    df_game = get_game_df(game_id)
+    return dbc.Container([
+        dbc.Row(
+            dbc.Col([make_game_card(df_game)], width=12)
+        )
+    ], fluid=True)
