@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 from data import available_seasons, get_season_end_standings_df, make_standings_table
 
-dash.register_page(__name__, path="/", name="Standings")
+dash.register_page(__name__, path="/standings", name="Standings")
 
 layout = html.Div([
     dcc.Dropdown(

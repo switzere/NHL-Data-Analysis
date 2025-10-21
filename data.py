@@ -4,6 +4,8 @@ from config import db_config
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 from datetime import date
+import plotly.express as px
+
 
 
 # Connect and load data
@@ -132,6 +134,27 @@ def get_game_df(game_id):
     game_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
     return game_df
 
+def get_game_events_df(game_id):
+    cursor.execute("""
+        SELECT * FROM events
+        WHERE game_id = %s
+    """, (game_id,))
+    events_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    return events_df
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def make_standings_table(df):
     display_columns = ['Team', 'GP', 'W', 'L', 'OTL', 'PTS']
     rows = []
@@ -203,3 +226,34 @@ def make_game_card(df):
 # winning_goalie_id int 
 # winning_goal_scorer_id int 
 # series_status_round int
+
+def make_events_graphic(df):
+    if df.empty:
+        return html.Div("No events found for this game.")
+    
+    # Add hover_text column if missing
+    if 'hover_text' not in df.columns:
+        df = df.copy()
+        df['hover_text'] = (
+            "Type: " + df['type_desc_key'].astype(str) +
+            "<br>Period: " + df['period_number'].astype(str) +
+            "<br>Time: " + df['time_in_period'].astype(str)
+        )
+
+    fig = px.scatter(
+        df,
+        x='x_coord',
+        y='y_coord',
+        color='type_desc_key',
+        hover_name='type_desc_key',  # Main hover label
+        hover_data={'hover_text': True, 'x_coord': True, 'y_coord': True, 'type_desc_key': False},
+        labels={'x_coord': 'X Coordinate', 'y_coord': 'Y Coordinate'},
+        range_x=[-100, 100],   # Set x-axis range
+        range_y=[42, -42],      # Set y-axis range and reverse
+        title='Event Locations'
+    )
+
+    fig.update_layout(width=900, height=600)
+
+    
+    return dcc.Graph(figure=fig)
