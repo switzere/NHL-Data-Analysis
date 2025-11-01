@@ -1,4 +1,11 @@
 Youtube Resources/
-.config.py
-logos/
-.Roadmap.txt
+config.py
+Roadmap.txt
+nhl_data_exploration.ipynb
+1 linear regression.ipynb
+2 logistic regression.ipynb
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

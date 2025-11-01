@@ -11,6 +11,7 @@ import plotly.express as px
 # Connect and load data
 connection = mysql.connector.connect(
     host=db_config["host"],
+    port=db_config["port"],
     user=db_config["user"],
     password=db_config["password"],
     database=db_config["database"]
@@ -142,9 +143,39 @@ def get_game_events_df(game_id):
     events_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
     return events_df
 
+def get_games_around_date(season, days_before=10, days_after=10):
+    season_id = int(season)
+    current_date = date.today()
+    cursor.execute("""
+        SELECT * FROM games
+        WHERE season_id = %s
+          AND date BETWEEN DATE_SUB(%s, INTERVAL %s DAY) 
+                       AND DATE_ADD(%s, INTERVAL %s DAY)
+        ORDER BY date
+    """, (season_id, current_date, days_before, current_date, days_after))
+    games_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    return games_df
 
+def get_current_season():
+    cursor.execute("""
+        SELECT DISTINCT season_id FROM games
+        ORDER BY season_id DESC
+        LIMIT 1
+    """)
+    result = cursor.fetchone()
+    if result:
+        return result[0]
+    return None
 
-
+def get_most_recent_game():
+    cursor.execute("""
+        SELECT * FROM games
+        WHERE game_outcome != ''
+        ORDER BY date DESC
+        LIMIT 1
+    """)
+    game_df = pd.DataFrame([cursor.fetchone()], columns=[i[0] for i in cursor.description])
+    return game_df
 
 
 
@@ -194,7 +225,9 @@ def make_schedule_row(df):
                     html.H5(f"{row['date']}"),
                     html.P(f"{away_abv} @ {home_abv}"),
                     html.P(f"Score: {row['away_score']} - {row['home_score']}")
-                ], className="game-card"),
+                ], className="game-card",
+                    id=f"game-{game_id}"
+                ),
                 href=f"/game/{game_id}"
             )
         )
