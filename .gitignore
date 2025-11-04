@@ -9,3 +9,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+venv/
+
+restart_command.txt

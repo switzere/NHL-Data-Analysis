@@ -1,6 +1,6 @@
 import mysql.connector
 import pandas as pd
-from config import db_config
+from config import db_config, db_config_local, db_config_local_socket
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 from datetime import date
@@ -10,11 +10,11 @@ import plotly.express as px
 
 # Connect and load data
 connection = mysql.connector.connect(
-    host=db_config["host"],
-    port=db_config["port"],
-    user=db_config["user"],
-    password=db_config["password"],
-    database=db_config["database"]
+    host=db_config_local["host"],
+    port=db_config_local["port"],
+    user=db_config_local["user"],
+    password=db_config_local["password"],
+    database=db_config_local["database"]
 )
 cursor = connection.cursor()
 
@@ -190,7 +190,7 @@ def make_standings_table(df):
     display_columns = ['Team', 'GP', 'W', 'L', 'OTL', 'PTS']
     rows = []
     for _, row in df.iterrows():
-        team_link = dcc.Link(row['Team'], href=f"/team/{row['slug']}/{row['Season']}")
+        team_link = dcc.Link(row['Team'], href=f"/NHLDashboard/team/{row['slug']}/{row['Season']}")
         cells = [html.Td(team_link)] + [html.Td(row[col]) for col in display_columns if col != 'Team']
         rows.append(html.Tr(cells))
     return dbc.Table(
@@ -228,7 +228,7 @@ def make_schedule_row(df):
                 ], className="game-card",
                     id=f"game-{game_id}"
                 ),
-                href=f"/game/{game_id}"
+                href=f"/NHLDashboard/game/{game_id}"
             )
         )
     return html.Div(games, className="schedule-container")
