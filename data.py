@@ -10,12 +10,21 @@ import plotly.express as px
 
 # Connect and load data
 connection = mysql.connector.connect(
-    host=db_config_local["host"],
-    port=db_config_local["port"],
-    user=db_config_local["user"],
-    password=db_config_local["password"],
-    database=db_config_local["database"]
+    host=db_config["host"],
+    port=db_config["port"],
+    user=db_config["user"],
+    password=db_config["password"],
+    database=db_config["database"]
 )
+
+# local connection
+# connection = mysql.connector.connect(
+#     host=db_config_local["host"],
+#     port=db_config_local["port"],
+#     user=db_config_local["user"],
+#     password=db_config_local["password"],
+#     database=db_config_local["database"]
+# )
 cursor = connection.cursor()
 
 cursor.execute("""

@@ -6,7 +6,8 @@ app = dash.Dash(__name__,
     use_pages=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
-    requests_pathname_prefix="/NHLDashboard/"
+    requests_pathname_prefix="/NHLDashboard/",
+    routes_pathname_prefix="/NHLDashboard/"
 )
 
 print(dash.page_registry)
