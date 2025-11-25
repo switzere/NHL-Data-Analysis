@@ -1,14 +1,33 @@
 import dash
 from dash import html
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from data import get_roster_players_df, make_team_table, get_team_schedule_df, make_schedule_row, get_logo
 
-dash.register_page(__name__, path_template="/team/<team_slug>/<season>", name="Team Page")
+dash.register_page(__name__, path_template="/team/<team_slug>", name="Team Page")  
 
-def layout(team_slug=None, season=None, **kwargs):
-    df_roster = get_roster_players_df(season, team_slug)
-    df_schedule = get_team_schedule_df(season, team_slug)
+def layout(team_slug=None, **kwargs):
+    return dbc.Container([
+        dbc.Row(
+            dbc.Col(html.Div(id="team-content"), width=12)
+        )
+    ], fluid=True)
+
+@dash.callback(
+    Output("team-content", "children"),
+    Input("selected-season", "data"),
+    State("url", "pathname")
+)
+
+def update_team_page(selected_season, pathname):
+    team_slug = pathname.split("/")[-1]  # Extract the last part of the URL
+    if not team_slug:
+        return html.P("No team selected.")
+    
+
+
+    df_roster = get_roster_players_df(selected_season, team_slug)
+    df_schedule = get_team_schedule_df(selected_season, team_slug)
 
     img_src = get_logo(team_slug)
 
@@ -17,7 +36,7 @@ def layout(team_slug=None, season=None, **kwargs):
         dbc.Row(
             dbc.Col([
                 html.Img(src=img_src, alt=f"{team_slug} logo", style={"height": "60px", "marginRight": "1em"}),
-                html.H1(f"{team_slug} Roster ({season})", className="text-center my-4")
+                html.H1(f"{team_slug} Roster ({selected_season})", className="text-center my-4")
             ], width=12)
         ),
         dbc.Row(

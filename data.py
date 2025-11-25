@@ -5,7 +5,7 @@ from dash import dcc, html
 import dash_bootstrap_components as dbc
 from datetime import date
 import plotly.express as px
-
+import numpy as np
 
 
 # Connect and load data
@@ -28,44 +28,17 @@ connection = mysql.connector.connect(
 cursor = connection.cursor()
 
 cursor.execute("""
-    SELECT *
-    FROM seasons_end_standings
-    WHERE games_played > 0
+    SELECT * FROM seasons
 """)
-seasons_end_standings_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+seasons = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+
+available_seasons = sorted(seasons['season_id'].unique())#was start_year so that it looks nice but season_id works for the current functionality
 
 cursor.execute("""
     SELECT * FROM teams
 """)
 teams = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
 
-cursor.execute("""
-    SELECT * FROM roster_players
-""")
-roster_players = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
-
-# Data cleaning and merging
-column_mapping = {
-    'team_name': 'Team',
-    'games_played': 'GP',
-    'wins': 'W',
-    'losses': 'L',
-    'ot_losses': 'OTL',
-    'points': 'PTS',
-    'conference_name': 'Conference',
-    'season_id': 'Season'
-}
-seasons_end_standings_df = seasons_end_standings_df.merge(
-    teams[['team_id', 'team_name']],
-    left_on='team_id',
-    right_on='team_id',
-    how='left'
-)
-seasons_end_standings_df.rename(columns=column_mapping, inplace=True)
-seasons_end_standings_df = seasons_end_standings_df.sort_values(by='PTS', ascending=False)
-seasons_end_standings_df['slug'] = seasons_end_standings_df['Team'].str.replace(' ', '-').str.lower()
-teams['slug'] = teams['team_name'].str.replace(' ', '-').str.lower()
-available_seasons = sorted(seasons_end_standings_df['Season'].unique())
 
 def slug_to_name_and_id_and_abv(slug):
     team = teams[teams['slug'] == slug]
@@ -75,16 +48,18 @@ def slug_to_name_and_id_and_abv(slug):
 
 def get_team_abv(team):
     # If team is an int, treat as team_id
-    if isinstance(team, int):
+    result = None
+
+    if isinstance(team, (int, np.integer)):
         result = teams[teams['team_id'] == team]
     # If team is a string, treat as team_name
     elif isinstance(team, str):
         result = teams[teams['team_name'] == team]
-    else:
-        result = pd.DataFrame()
-    if not result.empty and 'team_abbreviation' in result.columns:
-        return result['team_abbreviation'].values[0]
-    return str(team)  # fallback
+
+    if result is not None and not result.empty:
+        return str(result['team_abbreviation'].values[0])
+
+    return None
 
 def get_team_id(team):
     # Try name first, then abbreviation
@@ -115,15 +90,54 @@ def get_logo(team_slug):
     team = teams[teams['slug'] == team_slug]
     if not team.empty and 'team_abbreviation' in team.columns:
         abv = team['team_abbreviation'].values[0]
-        return f"/assets/logos/{abv}_logo.svg"
+        return f"/NHLDashboard/assets/logos/{abv}_logo.svg"
     return None
 
 def get_season_end_standings_df(season):
+    cursor.execute("""
+        SELECT *
+        FROM seasons_end_standings
+        WHERE season_id = %s
+        AND games_played > 0
+    """, (int(season),))
+
+    seasons_end_standings_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+
+        # Data cleaning and merging
+    column_mapping = {
+        'team_name': 'Team',
+        'games_played': 'GP',
+        'wins': 'W',
+        'losses': 'L',
+        'ot_losses': 'OTL',
+        'points': 'PTS',
+        'conference_name': 'Conference',
+        'season_id': 'Season'
+    }
+    seasons_end_standings_df = seasons_end_standings_df.merge(
+        teams[['team_id', 'team_name']],
+        left_on='team_id',
+        right_on='team_id',
+        how='left'
+    )
+    seasons_end_standings_df.rename(columns=column_mapping, inplace=True)
+    seasons_end_standings_df = seasons_end_standings_df.sort_values(by='PTS', ascending=False)
+    seasons_end_standings_df['slug'] = seasons_end_standings_df['Team'].str.replace(' ', '-').str.lower()
+    teams['slug'] = teams['team_name'].str.replace(' ', '-').str.lower()
+
     return seasons_end_standings_df[seasons_end_standings_df['Season'] == season]
 
 def get_roster_players_df(season, team_slug):
     team_id = slug_to_name_and_id_and_abv(team_slug)[1]
     season_id = int(season)
+
+    cursor.execute("""
+    SELECT * FROM roster_players
+                   WHERE season_id = %s
+                   AND team_id = %s
+    """, (season_id, team_id))
+    roster_players = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+
     return roster_players[(roster_players['season_id'] == season_id) & (roster_players['team_id'] == team_id)]
 
 def get_team_schedule_df(season, team_slug):
@@ -199,8 +213,10 @@ def make_standings_table(df):
     display_columns = ['Team', 'GP', 'W', 'L', 'OTL', 'PTS']
     rows = []
     for _, row in df.iterrows():
-        team_link = dcc.Link(row['Team'], href=f"/NHLDashboard/team/{row['slug']}/{row['Season']}")
+        team_link = dcc.Link(row['Team'], href=f"/NHLDashboard/team/{row['slug']}")
         cells = [html.Td(team_link)] + [html.Td(row[col]) for col in display_columns if col != 'Team']
+        print(team_link)
+        print(cells)
         rows.append(html.Tr(cells))
     return dbc.Table(
         [html.Thead(html.Tr([html.Th(col) for col in display_columns]))] +
@@ -224,18 +240,34 @@ def make_schedule_row(df):
     current_date = date.today()
  
     games = []
+    is_id_set = False
+
     for _, row in df.iterrows():
         home_abv = get_team_abv(row['home_team_id'])
         away_abv = get_team_abv(row['away_team_id'])
         game_id = row['game_id']  # Assuming you have a game_id column
+        # make readable date Dec 10 example
+        game_date = row['date'].strftime("%b %d")
+
+        # # Check if the game date is today or after today
+        # hit_todays_date = (row['date'] >= current_date)
+        # print("Game date:", row['date'], "Current date:", current_date, "Hit today's date:", hit_todays_date)
+        # if hit_todays_date and not is_id_set:
+        #     print("Setting scroll-target for game_id:", game_id)
+        #     game_id_attr = "scroll-target"
+        #     is_id_set = True
+        # else:
+        #     game_id_attr = None
+
+
         games.append(
             dcc.Link(
                 html.Div([
-                    html.H5(f"{row['date']}"),
-                    html.P(f"{away_abv} @ {home_abv}"),
-                    html.P(f"Score: {row['away_score']} - {row['home_score']}")
-                ], className="game-card",
-                    id=f"game-{game_id}"
+                    html.P(f"{game_date}", className="date"),
+                    html.P(f"{away_abv} @ {home_abv}", className="teams"),
+                    html.P(f"Score: {row['away_score']} - {row['home_score']}", className="score")
+                ], className="game-card"
+                #,                    **({"id": game_id_attr} if game_id_attr else {})
                 ),
                 href=f"/NHLDashboard/game/{game_id}"
             )
@@ -245,7 +277,7 @@ def make_schedule_row(df):
 def make_game_card(df):
     if df.empty:
         return html.Div("Game not found.")#, className="game-card")
-    
+    print(df)
     row = df.iloc[0]
     home_abv = get_team_abv(row['home_team_id'])
     away_abv = get_team_abv(row['away_team_id'])
@@ -295,7 +327,22 @@ def make_events_graphic(df):
         title='Event Locations'
     )
 
-    fig.update_layout(width=900, height=600)
+    fig.update_layout(
+        images=[
+            dict(
+                source="/NHLDashboard/assets/rink-template.png",
+                xref="x",
+                yref="y",
+                x=0,
+                y=3,
+                sizex=2,
+                sizey=2,
+                sizing="stretch",
+                layer="below")
+        ],
+        width=900,
+        height=600
+    )
 
     
     return dcc.Graph(figure=fig)

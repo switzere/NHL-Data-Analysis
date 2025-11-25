@@ -1,25 +1,69 @@
-.schedule-container {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 1em;
-    padding: 1em 0;
-    background: #f8f9fa;
-    /* Optional: hide vertical scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: #ccc #f8f9fa;
+html, body {
+    position: relative; /* Ensure the dropdown is positioned relative to the page */
 }
 
+.schedule-container {
+    display: flex;
+    /*justify-content: center; sets the start to the center*/
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 90px;
+    background: #ffffff;
+    max-width: 100%;
+    box-sizing: border-box; /* Include padding and borders in the width calculation */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f8f9fa;
+    margin: 0;
+}
+
+/* * {
+    outline: 1px solid red; /* Adds a red outline to all elements */
+/* } */
+
 .game-card {
-    min-width: 220px;
-    max-width: 250px;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1em;
+    min-width: 150px;
+    height: 100%;
+    border: 1px solid #000000;
+    padding-left: 1em;
     background: #fff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     flex: 0 0 auto;
 }
 .game-card:hover {
     background-color: #e9ecef;
+}
+
+.game-card .date {
+    font-size: 14px;
+    margin-bottom: 0px;
+    padding-top: 4px;
+}
+
+.game-card .teams {
+    font-size: 14px;
+    margin-bottom: 0px;
+    font-weight: bold;
+}
+
+.game-card .score {
+    font-size: 14px;
+    margin-bottom: 3px;
+    font-weight: bold;
+}
+
+.floating-dropdown {
+    position: absolute;
+    top: 14.5%; /* Position it right below the row */
+    right: 0; /* Align it to the right */
+    z-index: 10; /* Ensure it appears above other elements */
+    background-color: white; /* Optional: Add a background color */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for better visibility */
+    width: 7%;
+}
+
+.schedule-container-wrapper {
+    position: relative;
+    overflow-y: hidden; /* Prevent vertical scrolling */
+    overflow-x: hidden; /* Prevent horizontal scrolling */
 }

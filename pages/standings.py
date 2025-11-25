@@ -2,24 +2,17 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
-from data import available_seasons, get_season_end_standings_df, make_standings_table
+from data import get_season_end_standings_df, make_standings_table
 
 dash.register_page(__name__, path="/standings", name="Standings")
 
-layout = html.Div([
-    dcc.Dropdown(
-        id='season-dropdown',
-        options=[{'label': s, 'value': s} for s in available_seasons],
-        value=available_seasons[-1],
-        clearable=False,
-        style={'marginBottom': '1em'}
-    ),
+layout = html.Div(
     html.Div(id='standings-content')
-])
+)
 
 @dash.callback(
     Output('standings-content', 'children'),
-    Input('season-dropdown', 'value')
+    Input('selected-season', 'data')
 )
 def update_standings(selected_season):
     df = get_season_end_standings_df(selected_season)
