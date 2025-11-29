@@ -249,15 +249,9 @@ def make_schedule_row(df):
         # make readable date Dec 10 example
         game_date = row['date'].strftime("%b %d")
 
-        # # Check if the game date is today or after today
-        # hit_todays_date = (row['date'] >= current_date)
-        # print("Game date:", row['date'], "Current date:", current_date, "Hit today's date:", hit_todays_date)
-        # if hit_todays_date and not is_id_set:
-        #     print("Setting scroll-target for game_id:", game_id)
-        #     game_id_attr = "scroll-target"
-        #     is_id_set = True
-        # else:
-        #     game_id_attr = None
+        score_section = None
+        if pd.notnull(row['away_score']) and pd.notnull(row['home_score']):
+            score_section = html.P(f"Score: {int(row['away_score'])} - {int(row['home_score'])}", className="score")
 
 
         games.append(
@@ -265,7 +259,7 @@ def make_schedule_row(df):
                 html.Div([
                     html.P(f"{game_date}", className="date"),
                     html.P(f"{away_abv} @ {home_abv}", className="teams"),
-                    html.P(f"Score: {row['away_score']} - {row['home_score']}", className="score")
+                    score_section
                 ], className="game-card"
                 #,                    **({"id": game_id_attr} if game_id_attr else {})
                 ),
@@ -274,19 +268,49 @@ def make_schedule_row(df):
         )
     return html.Div(games, className="schedule-container")
 
+
+def make_schedule_grid(df):
+    games = []
+    for _, row in df.iterrows():
+        home_abv = get_team_abv(row['home_team_id'])
+        away_abv = get_team_abv(row['away_team_id'])
+        game_id = row['game_id']  # Assuming you have a game_id column
+        game_date = row['date'].strftime("%b %d")
+
+        score_section = None
+        if pd.notnull(row['away_score']) and pd.notnull(row['home_score']):
+            score_section = html.P(f"Score: {int(row['away_score'])} - {int(row['home_score'])}", className="score")
+
+
+        games.append(
+            dcc.Link(
+                html.Div([
+                    html.H2(f"{away_abv} @ {home_abv}"),
+                    html.P(f"Date: {game_date}"),
+                    score_section
+                ], className="big-game-card"),
+                href=f"/NHLDashboard/game/{game_id}"
+            )
+        )
+    return html.Div(games, className="schedule-grid-container")
+
+
 def make_game_card(df):
     if df.empty:
         return html.Div("Game not found.")#, className="game-card")
-    print(df)
+
     row = df.iloc[0]
     home_abv = get_team_abv(row['home_team_id'])
     away_abv = get_team_abv(row['away_team_id'])
+
+    home_score = row['home_score'] if pd.notnull(row['home_score']) else "N/A"
+    away_score = row['away_score'] if pd.notnull(row['away_score']) else "N/A"
     
     return html.Div([
         html.H3(f"{away_abv} @ {home_abv}"),
         html.P(f"Date: {row['date']}"),
-        html.P(f"Score: {row['away_score']} - {row['home_score']}"),
-    ])#, className="game-card")
+        html.P(f"Score: {away_score} - {home_score}"),
+    ], className="big-game-card")#
 
 # game_id int PK 
 # season_id int 
@@ -330,17 +354,18 @@ def make_events_graphic(df):
     fig.update_layout(
         images=[
             dict(
-                source="/NHLDashboard/assets/rink-template.png",
+                source="/NHLDashboard/assets/rink-template-2.png",
                 xref="x",
                 yref="y",
-                x=0,
-                y=3,
-                sizex=2,
-                sizey=2,
+                x=-100,  # Align the left edge of the image with the left edge of the x-axis
+                y=-42,    # Align the top edge of the image with the top of the y-axis
+                sizex=200,  # Match the width of the x-axis range (-100 to 100)
+                sizey=84,   # Match the height of the y-axis range (42 to -42)
                 sizing="stretch",
-                layer="below")
+                layer="below"
+            )
         ],
-        width=900,
+        width=1250,
         height=600
     )
 

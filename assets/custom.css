@@ -17,9 +17,19 @@ html, body {
     margin: 0;
 }
 
+.schedule-grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columns of equal width */
+    gap: 20px; /* Add spacing between grid items */
+    justify-items: center; /* Center items horizontally */
+    align-items: start; /* Align items at the top */
+    margin: 20px auto; /* Center the grid within its container */
+    width: 100%; /* Ensure the grid takes up the full width of the container */
+}
+
 /* * {
-    outline: 1px solid red; /* Adds a red outline to all elements */
-/* } */
+    outline: 1px solid red;
+ } */
 
 .game-card {
     min-width: 150px;
@@ -50,6 +60,16 @@ html, body {
     font-size: 14px;
     margin-bottom: 3px;
     font-weight: bold;
+}
+
+.big-game-card {
+    width: 250px;
+    height: 100%;
+    border: 2px solid #000000;
+    padding-left: 1em;
+    background: #dddddd;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    flex: 0 0 auto;
 }
 
 .floating-dropdown {

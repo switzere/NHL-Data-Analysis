@@ -63,5 +63,20 @@ app.layout = html.Div([
 def update_selected_season(selected_season):
     return selected_season
 
+@app.callback(
+    Output('season-dropdown', 'style'),
+    Input('url', 'pathname')
+)
+def toggle_dropdown_visibility(pathname):
+    print(f"Current pathname: {pathname}")  # Debugging
+    if pathname.endswith('/'):
+        pathname = pathname[:-1]
+
+    dropdown_pages = ["/NHLDashboard/standings"]
+
+    if pathname in dropdown_pages:
+        return {'display': 'block'}
+    return {'display': 'none'}
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5006, debug=False)
