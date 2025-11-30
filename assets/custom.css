@@ -8,7 +8,7 @@ html, body {
     flex-direction: row;
     overflow-x: auto;
     overflow-y: hidden;
-    height: 90px;
+    height: 150px;/*90px;*/
     background: #ffffff;
     max-width: 100%;
     box-sizing: border-box; /* Include padding and borders in the width calculation */

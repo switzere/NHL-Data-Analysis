@@ -1,15 +1,20 @@
 import mysql.connector
+from mysql.connector import pooling
 import pandas as pd
 from config import db_config, db_config_local, db_config_local_socket
 from dash import dcc, html
 import dash_bootstrap_components as dbc
-from datetime import date
+from datetime import date, datetime
 import plotly.express as px
 import numpy as np
+import pytz
 
 
-# Connect and load data
-connection = mysql.connector.connect(
+
+# Create a connection pool
+connection_pool = pooling.MySQLConnectionPool(
+    pool_name="mypool",
+    pool_size=5,
     host=db_config["host"],
     port=db_config["port"],
     user=db_config["user"],
@@ -18,26 +23,38 @@ connection = mysql.connector.connect(
 )
 
 # local connection
-# connection = mysql.connector.connect(
+# connection_pool = mysql.connector.connect(
+#     pool_name="mypool",
+#     pool_size=5,
 #     host=db_config_local["host"],
 #     port=db_config_local["port"],
 #     user=db_config_local["user"],
 #     password=db_config_local["password"],
 #     database=db_config_local["database"]
 # )
-cursor = connection.cursor()
 
-cursor.execute("""
-    SELECT * FROM seasons
-""")
-seasons = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+#cursor = connection.cursor()
 
-available_seasons = sorted(seasons['season_id'].unique())#was start_year so that it looks nice but season_id works for the current functionality
+seasons = pd.DataFrame()
+teams = pd.DataFrame()
 
-cursor.execute("""
-    SELECT * FROM teams
-""")
-teams = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+connection = connection_pool.get_connection()
+try:
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT * FROM seasons
+    """)
+    seasons = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+
+    available_seasons = sorted(seasons['season_id'].unique())#was start_year so that it looks nice but season_id works for the current functionality
+
+    cursor.execute("""
+        SELECT * FROM teams
+    """)
+    teams = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+finally:
+    cursor.close()
+    connection.close()
 
 
 def slug_to_name_and_id_and_abv(slug):
@@ -94,14 +111,22 @@ def get_logo(team_slug):
     return None
 
 def get_season_end_standings_df(season):
-    cursor.execute("""
-        SELECT *
-        FROM seasons_end_standings
-        WHERE season_id = %s
-        AND games_played > 0
-    """, (int(season),))
+    seasons_end_standings_df = pd.DataFrame()
 
-    seasons_end_standings_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT *
+            FROM seasons_end_standings
+            WHERE season_id = %s
+            AND games_played > 0
+        """, (int(season),))
+
+        seasons_end_standings_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
 
         # Data cleaning and merging
     column_mapping = {
@@ -128,76 +153,136 @@ def get_season_end_standings_df(season):
     return seasons_end_standings_df[seasons_end_standings_df['Season'] == season]
 
 def get_roster_players_df(season, team_slug):
+    roster_players = pd.DataFrame()
+
     team_id = slug_to_name_and_id_and_abv(team_slug)[1]
     season_id = int(season)
 
-    cursor.execute("""
-    SELECT * FROM roster_players
-                   WHERE season_id = %s
-                   AND team_id = %s
-    """, (season_id, team_id))
-    roster_players = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+        SELECT * FROM roster_players
+                       WHERE season_id = %s
+                       AND team_id = %s
+        """, (season_id, team_id))
+        roster_players = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
 
     return roster_players[(roster_players['season_id'] == season_id) & (roster_players['team_id'] == team_id)]
 
 def get_team_schedule_df(season, team_slug):
+    schedule_df = pd.DataFrame()
+
     team_id = slug_to_name_and_id_and_abv(team_slug)[1]
     season_id = int(season)
-    cursor.execute("""
-        SELECT * FROM games
-        WHERE season_id = %s AND (home_team_id = %s OR away_team_id = %s)
-    """, (season_id, team_id, team_id))
-    schedule_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM games
+            WHERE season_id = %s AND (home_team_id = %s OR away_team_id = %s)
+        """, (season_id, team_id, team_id))
+        schedule_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
+
     return schedule_df
 
 def get_game_df(game_id):
-    cursor.execute("""
-        SELECT * FROM games
-        WHERE game_id = %s
-    """, (game_id,))
-    game_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    game_df = pd.DataFrame()
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM games
+            WHERE game_id = %s
+        """, (game_id,))
+        game_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
     return game_df
 
 def get_game_events_df(game_id):
-    cursor.execute("""
-        SELECT * FROM events
-        WHERE game_id = %s
-    """, (game_id,))
-    events_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    events_df = pd.DataFrame()
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM events
+            WHERE game_id = %s
+        """, (game_id,))
+        events_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
     return events_df
 
 def get_games_around_date(season, days_before=10, days_after=10):
+    games_df = pd.DataFrame()
+
     season_id = int(season)
     current_date = date.today()
-    cursor.execute("""
-        SELECT * FROM games
-        WHERE season_id = %s
-          AND date BETWEEN DATE_SUB(%s, INTERVAL %s DAY) 
-                       AND DATE_ADD(%s, INTERVAL %s DAY)
-        ORDER BY date
-    """, (season_id, current_date, days_before, current_date, days_after))
-    games_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM games
+            WHERE season_id = %s
+            AND date BETWEEN DATE_SUB(%s, INTERVAL %s DAY) 
+                        AND DATE_ADD(%s, INTERVAL %s DAY)
+            ORDER BY date
+        """, (season_id, current_date, days_before, current_date, days_after))
+        games_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
     return games_df
 
 def get_current_season():
-    cursor.execute("""
-        SELECT DISTINCT season_id FROM games
-        ORDER BY season_id DESC
-        LIMIT 1
-    """)
-    result = cursor.fetchone()
+    result = None
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT DISTINCT season_id FROM games
+            ORDER BY season_id DESC
+            LIMIT 1
+        """)
+        result = cursor.fetchone()
+    finally:
+        cursor.close()
+        connection.close()
+
     if result:
         return result[0]
     return None
 
 def get_most_recent_game():
-    cursor.execute("""
-        SELECT * FROM games
-        WHERE game_outcome != ''
-        ORDER BY date DESC
-        LIMIT 1
-    """)
-    game_df = pd.DataFrame([cursor.fetchone()], columns=[i[0] for i in cursor.description])
+    game_df = pd.DataFrame()
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM games
+            WHERE game_outcome != ''
+            ORDER BY date DESC
+            LIMIT 1
+        """)
+        game_df = pd.DataFrame([cursor.fetchone()], columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
     return game_df
 
 
@@ -248,6 +333,20 @@ def make_schedule_row(df):
         game_id = row['game_id']  # Assuming you have a game_id column
         # make readable date Dec 10 example
         game_date = row['date'].strftime("%b %d")
+        game_timestamp_UTC = row['start_time_UTC']
+
+        time_section = None
+        if pd.notnull(row['start_time_UTC']):
+            # Convert UTC timestamp to EST
+            utc = pytz.utc
+            eastern = pytz.timezone('US/Eastern')
+            game_datetime_UTC = game_timestamp_UTC.tz_localize(utc)  # Localize as UTC
+            game_datetime_EST = game_datetime_UTC.astimezone(eastern)  # Convert to EST
+
+            # Format the time as "7:00 PM"
+            formatted_time_EST = game_datetime_EST.strftime('%I:%M %p')
+            time_section = html.P(f"Start Time (EST): {formatted_time_EST}", className="start-time")
+
 
         score_section = None
         if pd.notnull(row['away_score']) and pd.notnull(row['home_score']):
@@ -259,7 +358,8 @@ def make_schedule_row(df):
                 html.Div([
                     html.P(f"{game_date}", className="date"),
                     html.P(f"{away_abv} @ {home_abv}", className="teams"),
-                    score_section
+                    score_section,
+                    time_section
                 ], className="game-card"
                 #,                    **({"id": game_id_attr} if game_id_attr else {})
                 ),
