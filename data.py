@@ -533,7 +533,7 @@ def make_schedule_grid(df):
         games.append(
             dcc.Link(
                 html.Div([
-                    html.H2(f"{away_abv} @ {home_abv}"),
+                    html.H3(f"{away_abv} @ {home_abv}"),
                     html.P(f"Date: {game_date}"),
                     score_section
                 ], className="big-game-card"),
@@ -618,7 +618,7 @@ def make_game_page(game_id):
         top_section,
         scoresheet,
         events_graphic
-    ], className="big-game-card")#
+    ], className="")#
 
 def make_scoresheet(df_game, df_events):
     if df_game.empty:

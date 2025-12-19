@@ -17,11 +17,11 @@ def layout(**kwargs):
         dbc.Row(  # Wrap the columns in a Row
             [
                 dbc.Col(
-                    html.H1("Welcome to the NHL Dashboard", className="text-center my-4"), width=6
+                    html.H1("Welcome to the NHL Dashboard", className="text-center my-4"), width=5
                 ),
                 dbc.Col(
                     dbc.Col([html.H2(f"Today's Games"), make_schedule_grid(todays_games)]),
-                    width=6
+                    width=7
                 ),
             ]
         ),

@@ -41,8 +41,8 @@ html, body {
 
 .schedule-grid-container .big-game-card {
     border: 1px solid #000000;
-    min-width: 220px;
-    min-height: 140px;
+    min-width: 100%;
+    min-height: 100%;
     padding: 16px 8px;
     display: flex;
     flex-direction: column;
