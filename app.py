@@ -50,8 +50,8 @@ app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     navbar,
     html.Div([
-        year_dropdown,
-        schedule_row         
+        schedule_row,
+        year_dropdown
     ], className="dropdown-and-schedule-container-wrapper"),  # Ensure the dropdown is positioned relative to this container
     dash.page_container
 ])
