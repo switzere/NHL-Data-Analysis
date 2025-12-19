@@ -19,7 +19,7 @@ def update_standings(selected_season):
     eastern = df[df['Conference'] == 'Eastern']
     western = df[df['Conference'] == 'Western']
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H1(f"NHL Standings {selected_season}-{int(selected_season)+1}", className="text-center my-4"), width=12)),
+        dbc.Row(dbc.Col(html.H1(f"NHL Standings {selected_season}", className="text-center my-4"), width=12)),
         dbc.Row([
             dbc.Col([html.H2("Eastern Conference", className="text-center"), make_standings_table(eastern)], width=6),
             dbc.Col([html.H2("Western Conference", className="text-center"), make_standings_table(western)], width=6)

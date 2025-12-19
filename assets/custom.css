@@ -2,19 +2,31 @@ html, body {
     position: relative; /* Ensure the dropdown is positioned relative to the page */
 }
 
+
+/* * {
+    outline: 1px solid red;
+ } */
+
+
+
+/* ensure game cards keep their horizontal layout */
 .schedule-container {
     display: flex;
-    /*justify-content: center; sets the start to the center*/
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    height: 150px;/*90px;*/
+    flex-direction: column;
+    overflow: visible;
     background: #ffffff;
     max-width: 100%;
-    box-sizing: border-box; /* Include padding and borders in the width calculation */
-    scrollbar-width: thin;
-    scrollbar-color: #ccc #f8f9fa;
-    margin: 0;
+    box-sizing: border-box;
+}
+
+/* make both rows take the same inner width so they scroll together */
+.dates-row,
+.games-row {
+    display: flex;
+    flex-direction: row;
+    box-sizing: border-box;
+    width: 100%; /* will match the .horizontal-scroll__inner width */
+    gap: 0;
 }
 
 .schedule-grid-container {
@@ -27,63 +39,138 @@ html, body {
     width: 100%; /* Ensure the grid takes up the full width of the container */
 }
 
-/* * {
-    outline: 1px solid red;
- } */
+.schedule-grid-container .big-game-card {
+    border: 1px solid #000000;
+    min-width: 220px;
+    min-height: 140px;
+    padding: 16px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.big-game-card:hover {
+    background-color: #e9ecef;
+}
+
+.schedule-date {
+    white-space: nowrap;        /* prevent wrapping */
+    overflow: hidden;          /* hide overflow */
+    text-overflow: ellipsis;   /* show ellipsis for long text */
+    flex: 0 0 auto;            /* keep the element at its minWidth */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #333;
+    box-sizing: border-box;
+    border: 1px solid #000;
+}
+
+/* single scroll bar that controls both rows */
+.horizontal-scroll__wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* an inner element sized to the combined width of items */
+.horizontal-scroll__inner {
+    display: inline-block;
+    min-width: max-content; /* ensures it grows to fit children */
+}
+
+/* optional: keep the scrollbar visible and make padding consistent */
+.horizontal-scroll__wrapper {
+    padding-bottom: 8px; /* space for scrollbar on some platforms */
+}
 
 .game-card {
-    min-width: 150px;
+    min-width: 120px;
     height: 100%;
     border: 1px solid #000000;
-    padding-left: 1em;
     background: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     flex: 0 0 auto;
+    
+    text-align: center;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    margin-bottom: 0px;
+    font-weight: bold;
 }
 .game-card:hover {
     background-color: #e9ecef;
 }
 
 .game-card .date {
-    font-size: 14px;
-    margin-bottom: 0px;
     padding-top: 4px;
 }
 
 .game-card .teams {
-    font-size: 14px;
-    margin-bottom: 0px;
     font-weight: bold;
+    margin-bottom: 0px;
 }
 
-.game-card .score {
-    font-size: 14px;
+.game-card .score,
+.game-card .time {
     margin-bottom: 3px;
-    font-weight: bold;
+    font-weight: normal;
+    font-size: 12px;
+}
+
+.game-card .logos {
+    margin-top: 5px;
 }
 
 .big-game-card {
-    width: 250px;
+    width: 100%;
     height: 100%;
-    border: 2px solid #000000;
-    padding-left: 1em;
-    background: #dddddd;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     flex: 0 0 auto;
 }
 
-.floating-dropdown {
-    position: absolute;
-    top: 14.5%; /* Position it right below the row */
-    right: 0; /* Align it to the right */
-    z-index: 10; /* Ensure it appears above other elements */
-    background-color: white; /* Optional: Add a background color */
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for better visibility */
-    width: 7%;
+.table-responsive table {
+    table-layout: fixed; /* Enforce fixed layout for columns */
+    width: 100%; /* Ensure the table takes up the full width of the container */
 }
 
-.schedule-container-wrapper {
+.table-responsive th, 
+.table-responsive td {
+    word-wrap: break-word; /* Break long words to prevent overflow */
+    white-space: normal; /* Allow wrapping of text */
+}
+
+.scoresheet-card {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.floating-dropdown {
+    margin-top: 1%;
+    width: 220px;
+    margin-left: auto;  
+    margin-right: 1%;
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 0;
+}
+
+.dropdown-and-schedule-container-wrapper {
     position: relative;
     overflow-y: hidden; /* Prevent vertical scrolling */
     overflow-x: hidden; /* Prevent horizontal scrolling */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.team-link-standings {
+    font-weight: bold;
+    width: 200px;
 }

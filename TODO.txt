@@ -1,0 +1,35 @@
+- Add desc_key to events for penalties to database (bench minor for failed challenge and all other penalties)
+- Probably take a look at events again
+
+Add divisions to standings
+Add playoff line to standings
+Allow for older divisions and standings to work
+Fix year selection dropdown
+
+Add assist to game sheet
+Add score to game sheet
+
+! Base webpage for:
+- teams, list current teams,
+    - team page, show current roster
+- players, show top scorers and (give search for players not priority)
+- games, pick day - gives you games on that day
+
+! Clean up text:
+Home
+game not played
+
+Fix database
+! - old games may not have scoring_player_id(and others) put in
+- check for things changed from -1 to Null in xy coords
+
+only load the closest x games on the schedule row to save loading time
+get game_id for todays games, from the time it starts to when it ends update every minute?
+    - would need to be done from the database side and webpage side
+
+WORK ON STORYTELLING
+Ideas:
+- Sharks and Blackhawks uptick this season
+
+BIG:
+add edge stats to database

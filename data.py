@@ -6,6 +6,7 @@ from dash import dcc, html
 import dash_bootstrap_components as dbc
 from datetime import date, datetime
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 import pytz
 
@@ -58,7 +59,8 @@ finally:
 
 
 def slug_to_name_and_id_and_abv(slug):
-    team = teams[teams['slug'] == slug]
+    team_name = slug.replace('-', ' ').lower()
+    team = teams[teams['team_name'].str.lower() == team_name]
     if not team.empty:
         return team['team_name'].values[0], int(team['team_id'].values[0]), team['team_abbreviation'].values[0]
     return None, None, None
@@ -88,23 +90,25 @@ def get_team_id(team):
         return int(result['team_id'].values[0])
     return None
 
-def get_team_name(team):
-    # Accepts team_id (int), team_name (str), or team_abbreviation (str)
-    if isinstance(team, int):
-        result = teams[teams['team_id'] == team]
-    elif isinstance(team, str):
-        # Try name first, then abbreviation
-        result = teams[teams['team_name'] == team]
-        if result.empty and 'team_abbreviation' in teams.columns:
-            result = teams[teams['team_abbreviation'] == team]
-    else:
-        result = pd.DataFrame()
-    if not result.empty:
-        return result['team_name'].values[0]
+def get_team_name(team_id = None, team_abv = None):
+    # Accepts team_id (int) or team_abbreviation (str)
+    if team_id is not None:
+        return teams[teams['team_id'] == team_id]['team_name'].values[0]
+    
+    if team_abv is not None:
+        return teams[teams['team_abbreviation'] == team_abv]['team_name'].values[0]
+    
     return None
 
-def get_logo(team_slug):
-    team = teams[teams['slug'] == team_slug]
+def get_logo(team_slug = None, team_id = None):
+    if team_slug is not None:
+        team_id = slug_to_name_and_id_and_abv(team_slug)[1]
+
+    if team_id is not None:
+        team = teams[teams['team_id'] == team_id]
+    else:
+        return None
+
     if not team.empty and 'team_abbreviation' in team.columns:
         abv = team['team_abbreviation'].values[0]
         return f"/NHLDashboard/assets/logos/{abv}_logo.svg"
@@ -225,8 +229,32 @@ def get_game_events_df(game_id):
         connection.close()
     return events_df
 
-def get_games_around_date(season, days_before=10, days_after=10):
+def get_games_of_season(season = None):
+    if season is None:
+        season = get_current_season()
+
     games_df = pd.DataFrame()
+    season_id = int(season)
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM games
+            WHERE season_id = %s
+            ORDER BY date
+        """, (season_id,))
+        games_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
+    return games_df
+
+def get_games_around_date(season=None, days_before=10, days_after=10):
+    games_df = pd.DataFrame()
+
+    if season is None:
+        season = get_current_season()
 
     season_id = int(season)
     current_date = date.today()
@@ -285,6 +313,68 @@ def get_most_recent_game():
         connection.close()
     return game_df
 
+def get_player(player_id):
+    player_df = pd.DataFrame()
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM players
+            WHERE player_id = %s
+        """, (player_id,))
+        player_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
+    return player_df
+
+def get_player_name(player_id, default="Unknown"):
+    try:
+        if player_id is None:
+            return default
+        df = get_player(player_id)
+        if df.empty:
+            return default
+        if 'skaterFullName' in df.columns and not pd.isnull(df['skaterFullName'].values[0]):
+            return str(df['skaterFullName'].values[0])
+        return default
+    except Exception:
+        return default
+    
+def get_teams_ordered():
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT s.team_id, MAX(s.season_id) AS last_season, t.team_name
+            FROM seasons_end_standings s
+            JOIN teams t ON s.team_id = t.team_id
+            WHERE s.games_played > 0
+            GROUP BY s.team_id, t.team_name
+        """)
+        teams_last_season = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
+
+    teams_last_season = teams_last_season.sort_values(by=['last_season', 'team_name'], ascending=[False, True])
+    return teams_last_season
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -299,12 +389,10 @@ def make_standings_table(df):
     rows = []
     for _, row in df.iterrows():
         team_link = dcc.Link(row['Team'], href=f"/NHLDashboard/team/{row['slug']}")
-        cells = [html.Td(team_link)] + [html.Td(row[col]) for col in display_columns if col != 'Team']
-        print(team_link)
-        print(cells)
+        cells = [html.Td(team_link, className="team-link-standings")] + [html.Td(row[col]) for col in display_columns if col != 'Team']
         rows.append(html.Tr(cells))
     return dbc.Table(
-        [html.Thead(html.Tr([html.Th(col) for col in display_columns]))] +
+        [html.Thead(html.Tr([html.Th(col, className="team-link-standings" if col == "Team" else "") for col in display_columns]))] +
         [html.Tbody(rows)],
         striped=True, bordered=True, hover=True, responsive=True
     )
@@ -325,48 +413,108 @@ def make_schedule_row(df):
     current_date = date.today()
  
     games = []
+    dates = []
+
     is_id_set = False
+    last_game_date = None
+
+    # constants must match your CSS (.game-card min-width and gap)
+    CARD_WIDTH = 120  # px, matches .game-card min-width
+    GAP = 0          # px, matches .dates-row/.games-row gap
+
+    # precompute number of games per date
+    date_counts = df.groupby('date').size().to_dict()
+
 
     for _, row in df.iterrows():
         home_abv = get_team_abv(row['home_team_id'])
         away_abv = get_team_abv(row['away_team_id'])
         game_id = row['game_id']  # Assuming you have a game_id column
         # make readable date Dec 10 example
-        game_date = row['date'].strftime("%b %d")
-        game_timestamp_UTC = row['start_time_UTC']
+        game_date = row['date']#.strftime("%b %d")
 
-        time_section = None
-        if pd.notnull(row['start_time_UTC']):
-            # Convert UTC timestamp to EST
-            utc = pytz.utc
-            eastern = pytz.timezone('US/Eastern')
-            game_datetime_UTC = game_timestamp_UTC.tz_localize(utc)  # Localize as UTC
-            game_datetime_EST = game_datetime_UTC.astimezone(eastern)  # Convert to EST
+        if last_game_date != game_date:
+            count = date_counts.get(game_date, 1)
+            total_width = count * CARD_WIDTH + max(0, count - 1) * GAP
+            label = game_date.strftime("%b %d") if count == 1 else game_date.strftime("%B %d, %Y")
 
-            # Format the time as "7:00 PM"
-            formatted_time_EST = game_datetime_EST.strftime('%I:%M %p')
-            time_section = html.P(f"Start Time (EST): {formatted_time_EST}", className="start-time")
+            dates.append(
+                html.Div(
+                    label,
+                    className="schedule-date",
+                    style={
+                        "minWidth": f"{total_width}px",
+                        "width": f"{total_width}px",
+                        "textAlign": "center",
+                        "flex": "0 0 auto"
+                    },
+                    **{"data-date": game_date.isoformat()}
+                )
+            )
+            last_game_date = game_date
+
+        logo_home = get_logo(team_id=row['home_team_id'])
+        logo_away = get_logo(team_id=row['away_team_id'])
+        logos_section = html.Div([
+            html.Img(src=logo_away, alt=f"{away_abv} logo", style={"height": "30px", "marginRight": "1em"}),
+            html.Img(src=logo_home, alt=f"{home_abv} logo", style={"height": "30px"})
+        ], className="logos")
+
+        teams_section = html.P(f"{away_abv} @ {home_abv}", className="teams")
 
 
+        #use game_outcome to see if game has been played
+
+        eastern = pytz.timezone('US/Eastern')  # Define the EST timezone
         score_section = None
-        if pd.notnull(row['away_score']) and pd.notnull(row['home_score']):
-            score_section = html.P(f"Score: {int(row['away_score'])} - {int(row['home_score'])}", className="score")
+        time_section = None
+        if pd.notnull(row['start_time_UTC']) and pd.isnull(row['game_outcome']):
+            game_datetime_UTC = row['start_time_UTC']
+            game_datetime_UTC = game_datetime_UTC.replace(tzinfo=pytz.UTC)  # Declare it as UTC
+
+            # Convert to EST
+            game_datetime_EST = game_datetime_UTC.astimezone(eastern)
+
+            # Format the time as "10:00 PM EST"
+            formatted_time_EST = game_datetime_EST.strftime('%I:%M %p')
+            time_section = html.P(f"{formatted_time_EST} EST", className="time")
+
+        elif pd.notnull(row['away_score']) and pd.notnull(row['home_score']):
+            OTSO = ' OT' if row['game_outcome'] == 'OT' else (' SO' if row['game_outcome'] == 'SO' else '')
+            score_section = html.P(f"{int(row['away_score'])} - {int(row['home_score'])} Final{OTSO}", className="score")
+
 
 
         games.append(
             dcc.Link(
                 html.Div([
-                    html.P(f"{game_date}", className="date"),
-                    html.P(f"{away_abv} @ {home_abv}", className="teams"),
+                    # html.P(f"{game_date}", className="date"),
+                    # html.P(f"{away_abv} @ {home_abv}", className="teams"),
+                    logos_section,
+                    teams_section,
                     score_section,
                     time_section
-                ], className="game-card"
+                ], className=f"game-card {game_date}"
                 #,                    **({"id": game_id_attr} if game_id_attr else {})
                 ),
                 href=f"/NHLDashboard/game/{game_id}"
             )
         )
-    return html.Div(games, className="schedule-container")
+
+    schedule_row = html.Div(
+        html.Div(
+            [
+                html.Div(dates, className="dates-row"),
+                html.Div(games, className="games-row"),
+            ],
+            className="horizontal-scroll__inner"
+        ),
+        className="horizontal-scroll__wrapper schedule-container",
+        id="schedule-scroll-wrapper",
+        **{"data-today": current_date.isoformat()}   
+    )
+
+    return schedule_row
 
 
 def make_schedule_grid(df):
@@ -412,6 +560,225 @@ def make_game_card(df):
         html.P(f"Score: {away_score} - {home_score}"),
     ], className="big-game-card")#
 
+def make_game_page(game_id):
+    df_game = get_game_df(game_id)
+    df_events = get_game_events_df(game_id)
+
+    if df_game.empty:
+        return html.Div("Game not found.")
+
+    row = df_game.iloc[0]
+    home_abv = get_team_abv(row['home_team_id'])
+    away_abv = get_team_abv(row['away_team_id'])
+
+    home_score = row['home_score'] if pd.notnull(row['home_score']) else "N/A"
+    away_score = row['away_score'] if pd.notnull(row['away_score']) else "N/A"
+
+    if pd.notnull(row['home_score']) and pd.notnull(row['away_score']):
+        score_or_time = f"{away_score} - {home_score}"
+    else:
+        eastern = pytz.timezone('US/Eastern')  # Define the EST timezone
+        if pd.notnull(row['start_time_UTC']):
+            game_datetime_UTC = row['start_time_UTC']
+            game_datetime_UTC = game_datetime_UTC.replace(tzinfo=pytz.UTC)  # Declare it as UTC
+
+            # Convert to EST
+            game_datetime_EST = game_datetime_UTC.astimezone(eastern)
+
+            # Format the time as "10:00 PM EST"
+            formatted_time_EST = game_datetime_EST.strftime('%I:%M %p')
+            score_or_time = f"{formatted_time_EST} EST"
+        else:
+            score_or_time = "Start time TBA"
+
+    top_section = html.Div([
+        # Row: logos and matchup
+        html.Div([
+            html.Img(src=get_logo(team_id=row['away_team_id']), alt=f"{away_abv} logo", style={"height": "60px", "marginRight": "1em"}),
+            html.H2(f"{away_abv} @ {home_abv}", style={"margin": "0 1em", "textAlign": "center"}),
+            html.Img(src=get_logo(team_id=row['home_team_id']), alt=f"{home_abv} logo", style={"height": "60px", "marginLeft": "1em"}),
+        ], style={"display": "flex", "alignItems": "center", "justifyContent": "center"}),
+        # Row: score and date, centered below
+        html.Div([
+            html.H2(f"{score_or_time}", className="text-center mb-4"),
+            html.H2(f"{row['date']}", className="text-center mb-4")
+        ], style={"textAlign": "center", "width": "100%"})
+    ], style={"display": "flex", "flexDirection": "column", "alignItems": "center", "justifyContent": "center"})
+
+    scoresheet = html.Div()
+    if not df_events.empty:
+        scoresheet = make_scoresheet(df_game, df_events)
+
+    events_graphic = html.Div()
+    if not df_events.empty:
+        events_graphic = make_events_graphic(df_events, home_team_id=row['home_team_id'], away_team_id=row['away_team_id'])
+
+
+    return html.Div([
+        top_section,
+        scoresheet,
+        events_graphic
+    ], className="big-game-card")#
+
+def make_scoresheet(df_game, df_events):
+    if df_game.empty:
+        return html.Div("No game data available for this game.")
+    
+    row = df_game.iloc[0]
+
+    home_id = row['home_team_id']
+    away_id = row['away_team_id']
+
+    home_name = get_team_name(team_id = home_id)
+    away_name = get_team_name(team_id = away_id)
+
+    home_logo = get_logo(team_id=home_id)
+    away_logo = get_logo(team_id=away_id)
+
+
+    if df_game['game_outcome'].isnull().values[0]:
+        charts = html.Div("Game has not been played yet.")
+    else:
+        away_side = make_scoresheet_team_side(df_events, away_id)
+        home_side = make_scoresheet_team_side(df_events, home_id)
+
+        away_display = away_side[['type_desc_key', 'period_number', 'time_in_period', 'event_player_owner_name']].rename(
+            columns={
+                "type_desc_key": "Event",
+                "event_player_owner_name": "Player",
+                "period_number": "Period",
+                "time_in_period": "Time"
+            }
+        )
+        home_display = home_side[['type_desc_key', 'period_number', 'time_in_period', 'event_player_owner_name']].rename(
+            columns={
+                "type_desc_key": "Event",
+                "event_player_owner_name": "Player",
+                "period_number": "Period",
+                "time_in_period": "Time"
+            }
+        )
+
+        #make details column for assists in both displays
+        away_display['Details'] = away_side.apply(
+            lambda row: (
+                (
+                    (f"Assist 1: {get_player_name(row['assist1_player'], default='N/A')}" if pd.notnull(row['assist1_player']) and row['assist1_player'] != '' else '')
+                    +
+                    (f", Assist 2: {get_player_name(row['assist2_player'], default='N/A')}" if pd.notnull(row['assist2_player']) and row['assist2_player'] != '' else '')
+                ) if row['type_desc_key'] == 'Goal' else ''
+            ),
+            axis=1
+        )
+
+        home_display['Details'] = home_side.apply(
+            lambda row: (
+                (
+                    (f"Assist 1: {get_player_name(row['assist1_player'], default='N/A')}" if pd.notnull(row['assist1_player']) and row['assist1_player'] != '' else '')
+                    +
+                    (f", Assist 2: {get_player_name(row['assist2_player'], default='N/A')}" if pd.notnull(row['assist2_player']) and row['assist2_player'] != '' else '')
+                ) if row['type_desc_key'] == 'Goal' else ''
+            ),
+            axis=1
+        )
+
+
+        charts = dbc.Row([
+            dbc.Col(dbc.Table.from_dataframe(
+                away_display,
+                striped=True, bordered=True, hover=True, responsive=True
+            ), width=6),
+            dbc.Col(dbc.Table.from_dataframe(
+                home_display,
+                striped=True, bordered=True, hover=True, responsive=True
+            ), width=6)
+        ])
+
+
+    sc = html.Div([
+        dbc.Row([
+            dbc.Col(
+                html.Div([
+                    html.Img(src=away_logo, alt=f"{away_name} logo", style={"height": "30px", "marginRight": "10px"}),
+                    html.H4(f"{away_name}", className="text-center", style={"display": "inline-block", "verticalAlign": "middle"})
+                ], className="text-center"),
+                width=6
+            ),
+            dbc.Col(
+                html.Div([
+                    html.Img(src=home_logo, alt=f"{home_name} logo", style={"height": "30px", "marginRight": "10px"}),
+                    html.H4(f"{home_name}", className="text-center", style={"display": "inline-block", "verticalAlign": "middle"})
+                ], className="text-center"),
+                width=6
+            )
+        ]),
+        charts
+    ], className="scoresheet-card")
+
+
+    return html.Div([
+        sc
+    ], className="scoresheet")
+
+
+def make_scoresheet_team_side(df_events, team_id):
+    #get goals, assists, penalties, shots from events table for players on the away team from df
+    team_df = df_events[df_events['event_owner_team_id'] == team_id]
+    team_df['type_desc_key'] = team_df['type_desc_key'].str.capitalize()
+
+    team_df = team_df[team_df['type_desc_key'].isin(['Goal', 'Penalty', 'Shot' ])]
+    #event_id, period_number, period_type, time_in_period, time_remaining, situation_code, type_code, type_desc_key, sort_order, x_coord, y_coord, zone_code, shot_type, blocking_Player_id, shooting_player_id, goalie_in_net_id, player_id, event_owner_team_id, away_sog, home_sog, hitting_player_id, hittee_player_id, reason, secondary_reason, losing_player_id, winning_player_id, scoring_player_id, assist1_player_id, assist2_player_id, highlight_clip_sharing_url, duration, served_by_player_id, drawn_by_player_id, committed_by_player_id
+
+    team_sc_df = pd.DataFrame()
+    #for each row if it is a goal get the scoring_player_id, assist1_player_id, assist2_player_id
+    for _, event in team_df.iterrows():
+        if event['type_desc_key'] == 'Goal':
+            scoring_player_id = event['scoring_player_id']
+            assist1_player_id = event['assist1_player_id']
+            assist2_player_id = event['assist2_player_id']
+
+            new_row = {
+                'type_desc_key': 'Goal',
+                'period_number': event['period_number'],
+                'time_in_period': event['time_in_period'],
+                'event_player_owner_id': scoring_player_id,
+                'assist1_player': assist1_player_id,
+                'assist2_player': assist2_player_id,
+                'event_player_owner_name': get_player_name(scoring_player_id)
+            }
+
+        elif event['type_desc_key'] == 'Penalty':
+            committed_by_player_id = event['committed_by_player_id']
+            new_row = {
+                'type_desc_key': 'Penalty',
+                'period_number': event['period_number'],
+                'time_in_period': event['time_in_period'],
+                'event_player_owner_id': committed_by_player_id,
+                'event_player_owner_name': get_player_name(committed_by_player_id)
+            }
+
+        elif event['type_desc_key'] == 'Shot':
+            shooting_player_id = event['shooting_player_id']
+            new_row = {
+                'type_desc_key': 'Shot',
+                'period_number': event['period_number'],
+                'time_in_period': event['time_in_period'],
+                'event_player_owner_id': shooting_player_id,
+                'event_player_owner_name': get_player_name(shooting_player_id)
+            }
+
+        team_sc_df = pd.concat([team_sc_df, pd.DataFrame([new_row])], ignore_index=True)
+
+    #order team_sc_df by period_number(1,2,3) and time_in_period(00:00 to 20:00)
+    team_sc_df['period_number'] = team_sc_df['period_number'].astype(int)
+    team_sc_df['timedelta'] = team_sc_df['time_in_period'].apply(lambda x: f"00:{x}" if pd.notnull(x) and ':' in str(x) and len(str(x).split(':')) == 2 else x)
+    team_sc_df['timedelta'] = pd.to_timedelta(team_sc_df['timedelta'])
+    team_sc_df = team_sc_df.sort_values(by=['period_number', 'timedelta'], ascending=[True, True])
+
+    return team_sc_df
+
+
+
 # game_id int PK 
 # season_id int 
 # game_type int 
@@ -425,49 +792,101 @@ def make_game_card(df):
 # winning_goal_scorer_id int 
 # series_status_round int
 
-def make_events_graphic(df):
+def make_events_graphic(df, home_team_id, away_team_id):
     if df.empty:
         return html.Div("No events found for this game.")
-    
+
+
+    home_team_name = get_team_name(team_id=home_team_id)
+    away_team_name = get_team_name(team_id=away_team_id)
+
+
+
+    # Map team IDs to names for legend clarity
+    team_id_to_name = {
+        home_team_id: f"{home_team_name}",
+        away_team_id: f"{away_team_name}"
+    }
+    df['team_label'] = df['event_owner_team_id'].map(team_id_to_name)
+
+    #remove delayed-penalty events
+    df = df[df['type_desc_key'] != 'delayed-penalty']
+
     # Add hover_text column if missing
     if 'hover_text' not in df.columns:
         df = df.copy()
         df['hover_text'] = (
             "Type: " + df['type_desc_key'].astype(str) +
             "<br>Period: " + df['period_number'].astype(str) +
-            "<br>Time: " + df['time_in_period'].astype(str)
+            "<br>Time: " + df['time_in_period'].astype(str) +
+            "<br>Team: " + df['team_label'].astype(str)
         )
 
-    fig = px.scatter(
-        df,
-        x='x_coord',
-        y='y_coord',
-        color='type_desc_key',
-        hover_name='type_desc_key',  # Main hover label
-        hover_data={'hover_text': True, 'x_coord': True, 'y_coord': True, 'type_desc_key': False},
-        labels={'x_coord': 'X Coordinate', 'y_coord': 'Y Coordinate'},
-        range_x=[-100, 100],   # Set x-axis range
-        range_y=[42, -42],      # Set y-axis range and reverse
-        title='Event Locations'
-    )
+    fig = go.Figure()
+
+    team_colors = {f"{home_team_name}": "orange", f"{away_team_name}": "purple"}
+
+    for team_label in team_colors:
+        for event_type in df['type_desc_key'].unique():
+            team_events = df[(df['team_label'] == team_label) & (df['type_desc_key'] == event_type)]
+            if not team_events.empty:
+                symbol = "x" if event_type == "goal" else "circle"
+                size = 12 if event_type == "goal" else 8
+                opacity = 1 if event_type == "goal" else 0.9
+                is_visible = True if event_type in ["goal", "shot-on-goal"] else "legendonly"
+
+                fig.add_trace(go.Scatter(
+                    x=team_events['x_coord'],
+                    y=team_events['y_coord'],
+                    legendgroup=team_label,
+                    legendgrouptitle_text=team_label if event_type == "goal" else None,  # Only set once per group
+                    name=event_type.capitalize(),
+                    mode="markers",
+                    marker=dict(color=team_colors[team_label], symbol=symbol, size=size, opacity=opacity),
+                    hovertext=team_events['hover_text'] if 'hover_text' in team_events else None,
+                    hoverinfo="text",
+                    visible=is_visible
+                ))
 
     fig.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
         images=[
             dict(
                 source="/NHLDashboard/assets/rink-template-2.png",
                 xref="x",
                 yref="y",
-                x=-100,  # Align the left edge of the image with the left edge of the x-axis
-                y=-42,    # Align the top edge of the image with the top of the y-axis
-                sizex=200,  # Match the width of the x-axis range (-100 to 100)
-                sizey=84,   # Match the height of the y-axis range (42 to -42)
+                x=-100,
+                y=42,
+                sizex=200,
+                sizey=-84,
                 sizing="stretch",
-                layer="below"
+                layer="below",
+                opacity=0.8
             )
         ],
-        width=1250,
-        height=600
+        # width=1250,
+        # height=600,
+        xaxis=dict(range=[-100, 100]),
+        yaxis=dict(range=[-42, 42]),
+        title='Event Locations',
+        legend=dict(groupclick="toggleitem", itemdoubleclick="toggleothers")
     )
 
-    
-    return dcc.Graph(figure=fig)
+    return html.Div(
+        dcc.Graph(
+            figure=fig,
+            style={
+                "width": "80%",
+                "aspectRatio": "2.1", #really 2.35 but this looks more natural
+                "height": "auto",
+                "minHeight": "300px"
+            }
+        ),
+        style={
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "width": "100%"
+        }
+    )

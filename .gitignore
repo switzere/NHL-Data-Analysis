@@ -7,9 +7,6 @@ nhl_data_exploration.ipynb
 2 logistic regression.ipynb
 
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
 
 venv/
 

@@ -2,7 +2,7 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
-from data import get_games_around_date, make_schedule_row, get_current_season, available_seasons
+from data import get_games_around_date, make_schedule_row, get_current_season, available_seasons, get_games_of_season
 
 app = dash.Dash(
     __name__,
@@ -39,20 +39,20 @@ year_dropdown = dcc.Dropdown(
 )
 
 # Schedule Row
-df_schedule = get_games_around_date(get_current_season(), days_before=10, days_after=10)
-schedule_row = dbc.Row([
-    make_schedule_row(df_schedule)
-])
+schedule_row = dbc.Row(dbc.Col(html.Div(id="schedule-row-container"), width=12))
+
 
 # App Layout
 app.layout = html.Div([
     dcc.Store(id='selected-season', data=available_seasons[-1]),
+    dcc.Interval(id='daily-refresh', interval=24*60*60*1000, n_intervals=0),  # refresh every 24 hours
+    #dcc.Interval(id='daily-refresh', interval=10*60*1000, n_intervals=0),  # 10 minutes * 60 seconds * 1000 ms
     dcc.Location(id='url', refresh=False),
     navbar,
     html.Div([
+        year_dropdown,
         schedule_row         
-    ], className="schedule-container-wrapper"),  # Ensure the dropdown is positioned relative to this container
-    year_dropdown,
+    ], className="dropdown-and-schedule-container-wrapper"),  # Ensure the dropdown is positioned relative to this container
     dash.page_container
 ])
 
@@ -68,15 +68,26 @@ def update_selected_season(selected_season):
     Input('url', 'pathname')
 )
 def toggle_dropdown_visibility(pathname):
-    print(f"Current pathname: {pathname}")  # Debugging
+    #print(f"Current pathname: {pathname}")  # Debugging
     if pathname.endswith('/'):
         pathname = pathname[:-1]
 
-    dropdown_pages = ["/NHLDashboard/standings"]
+    # dropdown_pages = ["/NHLDashboard/standings", "/NHLDashboard/team/<team_slug>"]
 
-    if pathname in dropdown_pages:
+    # if pathname in dropdown_pages:
+    #     return {'display': 'block'}
+    if pathname == "/NHLDashboard/standings" or pathname.startswith("/NHLDashboard/team/"):
         return {'display': 'block'}
     return {'display': 'none'}
+
+@app.callback(
+    Output('schedule-row-container', 'children'),
+    Input('daily-refresh', 'n_intervals')
+)
+def render_schedule_row(_):
+    df_schedule = get_games_around_date()
+    #df_schedule = get_games_of_season()
+    return make_schedule_row(df_schedule)
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5006, debug=False)
