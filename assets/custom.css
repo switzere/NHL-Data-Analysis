@@ -135,7 +135,7 @@ html, body {
 }
 
 .table-responsive table {
-    table-layout: fixed; /* Enforce fixed layout for columns */
+    table-layout: auto; /* Enforce fixed layout for columns */
     width: 100%; /* Ensure the table takes up the full width of the container */
 }
 
@@ -170,6 +170,8 @@ html, body {
 }
 
 .team-link-standings {
-    font-weight: bold;
-    width: 200px;
+    white-space: nowrap !important;
+    width: 1%;
+    min-width: 120px;
+    max-width: none;     
 }

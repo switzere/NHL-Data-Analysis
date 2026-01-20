@@ -141,6 +141,7 @@ def get_season_end_standings_df(season):
         'ot_losses': 'OTL',
         'points': 'PTS',
         'conference_name': 'Conference',
+        'division_name': 'Division',
         'season_id': 'Season'
     }
     seasons_end_standings_df = seasons_end_standings_df.merge(
@@ -385,10 +386,19 @@ def get_teams_ordered():
 
 
 def make_standings_table(df):
-    display_columns = ['Team', 'GP', 'W', 'L', 'OTL', 'PTS']
+    #if season_id is before 19831984 remove OTL column
+    if 'Season' in df.columns and not df.empty and df['Season'].iloc[0] < 19831984:
+        display_columns = ['Team', 'GP', 'W', 'L', 'PTS']
+    else:
+        display_columns = ['Team', 'GP', 'W', 'L', 'OTL', 'PTS']
     rows = []
     for _, row in df.iterrows():
-        team_link = dcc.Link(row['Team'], href=f"/NHLDashboard/team/{row['slug']}")
+        team_logo = html.Img(
+            src=get_logo(team_slug=row['slug']),
+            alt=f"{row['Team']} logo",
+            style={"height": "20px", "marginRight": "8px", "verticalAlign": "middle"}
+        )
+        team_link = dcc.Link([team_logo, row['Team']], href=f"/NHLDashboard/team/{row['slug']}")
         cells = [html.Td(team_link, className="team-link-standings")] + [html.Td(row[col]) for col in display_columns if col != 'Team']
         rows.append(html.Tr(cells))
     return dbc.Table(

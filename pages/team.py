@@ -47,8 +47,10 @@ def update_team_page(selected_season, pathname):
     return dbc.Container([
         dbc.Row(
             dbc.Col([
-                html.Img(src=img_src, alt=f"{team_slug} logo", style={"height": "60px", "marginRight": "1em"}),
-                html.H1(f"{team_name} ({selected_season})", className="text-center my-4")
+                html.H1([
+                    html.Img(src=img_src, alt=f"{team_slug} logo", style={"height": "60px", "marginRight": "1em", "verticalAlign": "middle"}),
+                    f"{team_name} ({selected_season})"
+                ], className="text-center my-4"),
             ], width=12)
         ),
         dbc.Row(
