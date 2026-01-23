@@ -533,7 +533,11 @@ def make_schedule_grid(df):
         home_abv = get_team_abv(row['home_team_id'])
         away_abv = get_team_abv(row['away_team_id'])
         game_id = row['game_id']  # Assuming you have a game_id column
+        game_start_etc = row['start_time_UTC']
         game_date = row['date'].strftime("%b %d")
+
+        home_logo = get_logo(team_id=row['home_team_id'])
+        away_logo = get_logo(team_id=row['away_team_id'])
 
         score_section = None
         if pd.notnull(row['away_score']) and pd.notnull(row['home_score']):
@@ -543,7 +547,11 @@ def make_schedule_grid(df):
         games.append(
             dcc.Link(
                 html.Div([
-                    html.H3(f"{away_abv} @ {home_abv}"),
+                    html.Div([
+                        html.Img(src=away_logo, alt=f"{away_abv} logo", style={"height": "40px", "marginRight": "10px"}),
+                        html.H3(f"{away_abv} @ {home_abv}", style={"display": "inline-block", "margin": "0 10px"}),
+                        html.Img(src=home_logo, alt=f"{home_abv} logo", style={"height": "40px", "marginLeft": "10px"}),
+                    ], style={"display": "flex", "alignItems": "center", "justifyContent": "center"}),
                     html.P(f"Date: {game_date}"),
                     score_section
                 ], className="big-game-card"),
