@@ -2,7 +2,7 @@ import dash
 from dash import html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
-from data import get_roster_players_df, make_team_table, get_team_schedule_df, make_schedule_row, get_logo, slug_to_name_and_id_and_abv, get_teams_ordered
+from data import get_roster_players_df, make_team_table, get_team_schedule_df, make_schedule_row, get_logo, slug_to_name_and_id_and_abv, get_teams_ordered, make_team_cusp_figure
 
 dash.register_page(__name__, path_template="/team/<team_slug>", name="Team Page")  
 
@@ -37,6 +37,7 @@ def update_team_page(selected_season, pathname):
         
     
     team_name = slug_to_name_and_id_and_abv(team_slug)[0]
+    team_id = slug_to_name_and_id_and_abv(team_slug)[1]
 
     df_roster = get_roster_players_df(selected_season, team_slug)
     df_schedule = get_team_schedule_df(selected_season, team_slug)
@@ -55,6 +56,9 @@ def update_team_page(selected_season, pathname):
         ),
         dbc.Row(
             dbc.Col([html.H2(f"Schedule"), make_schedule_row(df_schedule)], width=12)
+            ),
+        dbc.Row(
+            dbc.Col([html.H2("CUSP Graph", className="text-center"), make_team_cusp_figure(team_id=team_id, season_id=selected_season)], width=12)
             ),
         dbc.Row([
             dbc.Col([html.H2("Roster", className="text-center"), make_team_table(df_roster)], width=12)

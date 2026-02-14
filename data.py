@@ -362,6 +362,26 @@ def get_teams_ordered():
     teams_last_season = teams_last_season.sort_values(by=['last_season', 'team_name'], ascending=[False, True])
     return teams_last_season
 
+def get_teams_games_season(team_id, season_id=20252026):
+    games_df = pd.DataFrame()
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute('''
+            SELECT *
+            FROM games
+            WHERE season_id = %s
+            AND (home_team_id = %s OR away_team_id = %s)
+            AND game_outcome IS NOT NULL
+            AND game_type = 2;
+        ''', (season_id, team_id, team_id))
+        games_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
+    return games_df
+
         
 
 
@@ -906,5 +926,56 @@ def make_events_graphic(df, home_team_id, away_team_id):
             "justifyContent": "center",
             "alignItems": "center",
             "width": "100%"
+        }
+    )
+
+def make_team_cusp_figure(team_id, season_id=20252026):
+    # You must pass a valid DB cursor from your app context
+
+    games = get_teams_games_season(team_id=team_id, season_id=season_id)
+
+    team_name = get_team_name(team_id=team_id)
+
+    games = games.sort_values(by='date')
+    games['points'] = 0
+    for game_index in games.index:
+        row = games.loc[game_index]
+        if (row['home_team_id'] == team_id) and (row['home_score'] > row['away_score']):
+            games.at[game_index, 'points'] = 2
+        elif (row['away_team_id'] == team_id) and (row['away_score'] > row['home_score']):
+            games.at[game_index, 'points'] = 2
+        elif (row['game_outcome'] in ['OT', 'SO']):
+            games.at[game_index, 'points'] = 1
+    games['cumulative_points'] = games['points'].cumsum()
+
+    x = np.arange(len(games) + 1)
+    y = np.insert(games['cumulative_points'].values, 0, 0)
+
+    xC = np.arange(0, 82 + 1)
+    cusp_line = 1.13 * xC
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=x, y=y, mode='lines+markers', name=team_name, line=dict(color='blue')
+    ))
+    fig.add_trace(go.Scatter(
+        x=xC, y=cusp_line, mode='lines', name='Cusp Line (slope=1.13)', line=dict(color='red', dash='dash')
+    ))
+    fig.update_layout(
+        title=f'{team_name} Cumulative Points in {season_id} Season',
+        xaxis_title='Games Played',
+        yaxis_title='Cumulative Points',
+        xaxis=dict(range=[0, 82], tickmode='linear', dtick=10),
+        legend=dict(x=0.01, y=0.99),
+        margin=dict(l=40, r=40, t=60, b=40),
+        template='plotly_white'
+    )
+    return dcc.Graph(
+        figure=fig,
+        style={
+            "width": "100%",
+            "maxWidth": "1800px",
+            "margin": "0 auto",
+            "height": "800px"
         }
     )
