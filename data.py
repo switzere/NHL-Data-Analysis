@@ -563,21 +563,36 @@ def make_schedule_grid(df):
         if pd.notnull(row['away_score']) and pd.notnull(row['home_score']):
             score_section = html.P(f"Score: {int(row['away_score'])} - {int(row['home_score'])}", className="score")
 
-
         games.append(
             dcc.Link(
                 html.Div([
-                    html.Div([
-                        html.Img(src=away_logo, alt=f"{away_abv} logo", style={"height": "40px", "marginRight": "10px"}),
-                        html.H3(f"{away_abv} @ {home_abv}", style={"display": "inline-block", "margin": "0 10px"}),
-                        html.Img(src=home_logo, alt=f"{home_abv} logo", style={"height": "40px", "marginLeft": "10px"}),
-                    ], style={"display": "flex", "alignItems": "center", "justifyContent": "center"}),
-                    html.P(f"Date: {game_date}"),
-                    score_section
-                ], className="big-game-card"),
+                    html.Section([
+                        html.H3(f"{away_abv} @ {home_abv}"),
+                        html.P(f"{game_id:08d}")  # Format game_id as an 8-digit number
+                    ], className="ticket-sub"),
+                    html.Section([
+                        html.Img(src=away_logo, alt=f"{away_abv} logo"),
+                        html.Img(src=home_logo, alt=f"{home_abv} logo")
+                    ], className="ticket-main")  # Empty ticket-main for simplicity
+                ], className="ticket"),
                 href=f"/NHLDashboard/game/{game_id}"
             )
         )
+
+        # games.append(
+        #     dcc.Link(
+        #         html.Div([
+        #             html.Div([
+        #                 html.Img(src=away_logo, alt=f"{away_abv} logo", style={"height": "40px", "marginRight": "10px"}),
+        #                 html.H3(f"{away_abv} @ {home_abv}", style={"display": "inline-block", "margin": "0 10px"}),
+        #                 html.Img(src=home_logo, alt=f"{home_abv} logo", style={"height": "40px", "marginLeft": "10px"}),
+        #             ], style={"display": "flex", "alignItems": "center", "justifyContent": "center"}),
+        #             html.P(f"Date: {game_date}"),
+        #             score_section
+        #         ], className="big-game-card"),
+        #         href=f"/NHLDashboard/game/{game_id}"
+        #     )
+        # )
     return html.Div(games, className="schedule-grid-container")
 
 
