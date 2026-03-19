@@ -11,7 +11,6 @@ import numpy as np
 import pytz
 
 
-
 # Create a connection pool
 connection_pool = pooling.MySQLConnectionPool(
     pool_name="mypool",
@@ -167,16 +166,19 @@ def get_roster_players_df(season, team_slug):
     try:
         cursor = connection.cursor()
         cursor.execute("""
-        SELECT * FROM roster_players
-                       WHERE season_id = %s
-                       AND team_id = %s
+            SELECT DISTINCT * FROM roster_players
+                LEFT JOIN players_season
+                ON (roster_players.player_id = players_season.player_id AND roster_players.season_id = players_season.season_id)
+                WHERE roster_players.season_id = %s
+                AND roster_players.team_id = %s
+                AND players_season.games_played > 0
         """, (season_id, team_id))
         roster_players = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
     finally:
         cursor.close()
         connection.close()
 
-    return roster_players[(roster_players['season_id'] == season_id) & (roster_players['team_id'] == team_id)]
+    return roster_players
 
 def get_team_schedule_df(season, team_slug):
     schedule_df = pd.DataFrame()
@@ -382,6 +384,21 @@ def get_teams_games_season(team_id, season_id=20252026):
         connection.close()
     return games_df
 
+
+#this should probably be changed once I fix the timestamps in the database
+def UTC_to_EST(start_time_UTC):
+    start_time = None
+
+    eastern = pytz.timezone('US/Eastern')  # Define the EST timezone
+
+    game_datetime_UTC = start_time_UTC
+    game_datetime_UTC = game_datetime_UTC.replace(tzinfo=pytz.UTC)  # Declare it as UTC
+
+    game_datetime_EST = game_datetime_UTC.astimezone(eastern)
+
+    return game_datetime_EST
+
+
         
 
 
@@ -411,16 +428,20 @@ def make_standings_table(df):
         display_columns = ['Team', 'GP', 'W', 'L', 'PTS']
     else:
         display_columns = ['Team', 'GP', 'W', 'L', 'OTL', 'PTS']
+
+    df = df.sort_values(by='PTS', ascending=False).reset_index(drop=True)
+    
     rows = []
-    for _, row in df.iterrows():
+    for index, row in df.iterrows():
         team_logo = html.Img(
             src=get_logo(team_slug=row['slug']),
             alt=f"{row['Team']} logo",
             style={"height": "20px", "marginRight": "8px", "verticalAlign": "middle"}
         )
         team_link = dcc.Link([team_logo, row['Team']], href=f"/NHLDashboard/team/{row['slug']}")
+        row_style = {"borderBottom": "2px solid black"} if index == 2 else {}
         cells = [html.Td(team_link, className="team-link-standings")] + [html.Td(row[col]) for col in display_columns if col != 'Team']
-        rows.append(html.Tr(cells))
+        rows.append(html.Tr(cells, style=row_style))
     return dbc.Table(
         [html.Thead(html.Tr([html.Th(col, className="team-link-standings" if col == "Team" else "") for col in display_columns]))] +
         [html.Tbody(rows)],
@@ -428,7 +449,8 @@ def make_standings_table(df):
     )
 
 def make_team_table(df):
-    display_columns = ['firstName','lastName', 'sweaterNumber', 'positionCode', 'heightInCentimeters', 'weightInKilograms', 'birthDate', 'birthCountry']
+    #display_columns = ['firstName','lastName', 'sweaterNumber', 'positionCode', 'heightInCentimeters', 'weightInKilograms', 'birthDate', 'birthCountry']
+    display_columns = ['firstName','lastName', 'sweaterNumber', 'positionCode', 'games_played', 'goals', 'assists', 'points', 'penalty_minutes', 'plus_minus']
     rows = []
     for _, row in df.iterrows():
         cells = [html.Td(row[col]) for col in display_columns]
@@ -553,7 +575,7 @@ def make_schedule_grid(df):
         home_abv = get_team_abv(row['home_team_id'])
         away_abv = get_team_abv(row['away_team_id'])
         game_id = row['game_id']  # Assuming you have a game_id column
-        game_start_etc = row['start_time_UTC']
+        game_start_etc = UTC_to_EST(row['start_time_UTC'])
         game_date = row['date'].strftime("%b %d")
 
         home_logo = get_logo(team_id=row['home_team_id'])
@@ -572,7 +594,8 @@ def make_schedule_grid(df):
                     ], className="ticket-sub"),
                     html.Section([
                         html.Img(src=away_logo, alt=f"{away_abv} logo"),
-                        html.Img(src=home_logo, alt=f"{home_abv} logo")
+                        html.Img(src=home_logo, alt=f"{home_abv} logo"),
+                        html.P(f"{game_date} - {game_start_etc.strftime('%I:%M %p')} EST")
                     ], className="ticket-main")  # Empty ticket-main for simplicity
                 ], className="ticket"),
                 href=f"/NHLDashboard/game/{game_id}"
@@ -630,13 +653,10 @@ def make_game_page(game_id):
     if pd.notnull(row['home_score']) and pd.notnull(row['away_score']):
         score_or_time = f"{away_score} - {home_score}"
     else:
-        eastern = pytz.timezone('US/Eastern')  # Define the EST timezone
         if pd.notnull(row['start_time_UTC']):
-            game_datetime_UTC = row['start_time_UTC']
-            game_datetime_UTC = game_datetime_UTC.replace(tzinfo=pytz.UTC)  # Declare it as UTC
 
             # Convert to EST
-            game_datetime_EST = game_datetime_UTC.astimezone(eastern)
+            game_datetime_EST = UTC_to_EST(row['start_time_UTC'])
 
             # Format the time as "10:00 PM EST"
             formatted_time_EST = game_datetime_EST.strftime('%I:%M %p')

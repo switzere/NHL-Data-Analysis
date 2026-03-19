@@ -30,3 +30,6 @@ Ideas:
 
 BIG:
 add edge stats to database
+
+
+players_season needs to be updated daily
