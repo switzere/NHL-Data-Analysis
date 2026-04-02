@@ -18,6 +18,22 @@ layout = html.Div(
 def update_standings(selected_season):
     df = get_season_end_standings_df(selected_season)
 
+    column_mapping = {
+        'team_name': 'Team',
+        'games_played': 'GP',
+        'wins': 'W',
+        'losses': 'L',
+        'ot_losses': 'OTL',
+        'points': 'PTS',
+        'conference_name': 'Conference',
+        'division_name': 'Division',
+        'season_id': 'Season',
+        
+        'wildcard_rank': 'WC'
+    }
+
+    df.rename(columns=column_mapping, inplace=True)
+
     if df['Conference'].isnull().all():
         return dbc.Container([
             dbc.Row(dbc.Col(html.H1(f"NHL Standings {selected_season}", className="text-center my-4"), width=12)),

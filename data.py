@@ -132,29 +132,35 @@ def get_season_end_standings_df(season):
         connection.close()
 
         # Data cleaning and merging
-    column_mapping = {
-        'team_name': 'Team',
-        'games_played': 'GP',
-        'wins': 'W',
-        'losses': 'L',
-        'ot_losses': 'OTL',
-        'points': 'PTS',
-        'conference_name': 'Conference',
-        'division_name': 'Division',
-        'season_id': 'Season'
-    }
+    # column_mapping = {
+    #     'team_name': 'Team',
+    #     'games_played': 'GP',
+    #     'wins': 'W',
+    #     'losses': 'L',
+    #     'ot_losses': 'OTL',
+    #     'points': 'PTS',
+    #     'conference_name': 'Conference',
+    #     'division_name': 'Division',
+    #     'season_id': 'Season',
+        
+    #     'wildcard_rank': 'WC'
+    # }
     seasons_end_standings_df = seasons_end_standings_df.merge(
         teams[['team_id', 'team_name']],
         left_on='team_id',
         right_on='team_id',
         how='left'
     )
-    seasons_end_standings_df.rename(columns=column_mapping, inplace=True)
-    seasons_end_standings_df = seasons_end_standings_df.sort_values(by='PTS', ascending=False)
-    seasons_end_standings_df['slug'] = seasons_end_standings_df['Team'].str.replace(' ', '-').str.lower()
+
+    seasons_end_standings_df = attach_wildcard_standings(seasons_end_standings_df)
+
+    #seasons_end_standings_df.rename(columns=column_mapping, inplace=True)
+    seasons_end_standings_df = seasons_end_standings_df.sort_values(by='points', ascending=False)
+    seasons_end_standings_df['slug'] = seasons_end_standings_df['team_name'].str.replace(' ', '-').str.lower()
     teams['slug'] = teams['team_name'].str.replace(' ', '-').str.lower()
 
-    return seasons_end_standings_df[seasons_end_standings_df['Season'] == season]
+
+    return seasons_end_standings_df[seasons_end_standings_df['season_id'] == season]
 
 def get_roster_players_df(season, team_slug):
     roster_players = pd.DataFrame()
@@ -298,23 +304,80 @@ def get_current_season():
         return result[0]
     return None
 
-def get_most_recent_game():
-    game_df = pd.DataFrame()
+def get_most_recent_games(num = 1, team_id = None):
+    games_df = pd.DataFrame()
+
+    team_where = ""
+    params = [num]
+
+    if team_id is not None:
+        team_where = "AND (home_team_id = %s OR away_team_id = %s)"
+        params = [team_id, team_id, num]
+    else:
+        #every team in season
+        team_where = ""
+        params = [num]
 
     connection = connection_pool.get_connection()
+    # try:
+    #     cursor = connection.cursor()
+    #     cursor.execute(f"""
+    #         SELECT * FROM games
+    #         WHERE game_outcome != ''
+    #         {team_where}
+    #         ORDER BY date DESC
+    #         LIMIT %s
+    #     """, tuple(params))
     try:
         cursor = connection.cursor()
-        cursor.execute("""
-            SELECT * FROM games
-            WHERE game_outcome != ''
-            ORDER BY date DESC
-            LIMIT 1
-        """)
-        game_df = pd.DataFrame([cursor.fetchone()], columns=[i[0] for i in cursor.description])
+        cursor.execute(f"""
+            WITH Base AS (
+                SELECT *
+                FROM games
+                WHERE game_outcome != ''
+                {team_where}
+            ),
+            Expanded AS (
+                SELECT 
+                    game_id,
+                    date,
+                    home_team_id AS team_id,
+                    away_team_id AS opponent_id,
+                    game_outcome,
+                    home_score AS team_score,
+                    away_score AS opponent_score
+                FROM Base
+
+                UNION ALL
+
+                SELECT
+                    game_id,
+                    date,
+                    away_team_id AS team_id,
+                    home_team_id AS opponent_id,
+                    game_outcome,
+                    away_score AS team_score,
+                    home_score AS opponent_score
+                FROM Base
+            ),
+            Ranked AS (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY team_id
+                        ORDER BY date DESC
+                    ) AS game_rank
+                FROM Expanded
+            )
+            SELECT *
+            FROM Ranked
+            WHERE game_rank <= %s;
+        """, tuple(params))
+        games_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
     finally:
         cursor.close()
         connection.close()
-    return game_df
+    return games_df
 
 def get_player(player_id):
     player_df = pd.DataFrame()
@@ -398,6 +461,39 @@ def UTC_to_EST(start_time_UTC):
 
     return game_datetime_EST
 
+def attach_wildcard_standings(season_end_standings_df):
+    # Get wildcard teams for each conference
+
+    top_3_in_divisions = season_end_standings_df.sort_values(by=['conference_name', 'division_name', 'points', 'wins'],ascending=[True, True, False, False]).groupby(['conference_name', 'division_name']).head(3).reset_index(drop=True)
+#    top_3_in_divisions = season_end_standings_df.groupby(['conference_name', 'division_name']).head(3).sort_values(by=['points', 'wins'], ascending=False)
+
+    #for each set of 3 in a division give them "wildcard_rank" of 1, 2, or 3 based on points and wins
+    top_3_in_divisions['wildcard_rank'] = top_3_in_divisions.groupby(['conference_name', 'division_name']).cumcount() + 1
+
+    #everything that doesn't have a wildcard_rank goes into wildcard teams
+    wildcard_teams = season_end_standings_df[~season_end_standings_df['team_id'].isin(top_3_in_divisions['team_id'])].copy()
+    #sort wildcard_teams
+    wildcard_teams = wildcard_teams.sort_values(by=['conference_name', 'points', 'wins'], ascending=[True, False, False])
+
+    wildcard_teams['wildcard_rank'] = wildcard_teams.groupby('conference_name').cumcount() + 7
+
+    season_end_standings_df = season_end_standings_df.merge(
+        top_3_in_divisions[['team_id', 'wildcard_rank']],
+        on='team_id',
+        how='left'
+    )
+
+    season_end_standings_df = season_end_standings_df.merge(
+        wildcard_teams[['team_id', 'wildcard_rank']],
+        on='team_id',
+        how='left'
+    )
+
+    season_end_standings_df['wildcard_rank'] = season_end_standings_df['wildcard_rank_x'].combine_first(season_end_standings_df['wildcard_rank_y'])
+
+    season_end_standings_df = season_end_standings_df.drop(columns=['wildcard_rank_x', 'wildcard_rank_y'])
+
+    return season_end_standings_df
 
         
 
@@ -427,7 +523,7 @@ def make_standings_table(df):
     if 'Season' in df.columns and not df.empty and df['Season'].iloc[0] < 19831984:
         display_columns = ['Team', 'GP', 'W', 'L', 'PTS']
     else:
-        display_columns = ['Team', 'GP', 'W', 'L', 'OTL', 'PTS']
+        display_columns = ['Team', 'GP', 'W', 'L', 'OTL', 'PTS', 'WC']
 
     df = df.sort_values(by='PTS', ascending=False).reset_index(drop=True)
     
@@ -440,7 +536,11 @@ def make_standings_table(df):
         )
         team_link = dcc.Link([team_logo, row['Team']], href=f"/NHLDashboard/team/{row['slug']}")
         row_style = {"borderBottom": "2px solid black"} if index == 2 else {}
-        cells = [html.Td(team_link, className="team-link-standings")] + [html.Td(row[col]) for col in display_columns if col != 'Team']
+        highlight_wc = row.get('WC') in (7, 8)
+
+        cell_style = {**row_style, "backgroundColor": "#dbe9ff"} if highlight_wc else {}
+
+        cells = [html.Td(team_link, className="team-link-standings", style=cell_style)] + [html.Td(row[col], style=cell_style) for col in display_columns if col != 'Team']
         rows.append(html.Tr(cells, style=row_style))
     return dbc.Table(
         [html.Thead(html.Tr([html.Th(col, className="team-link-standings" if col == "Team" else "") for col in display_columns]))] +
@@ -571,6 +671,10 @@ def make_schedule_row(df):
 
 def make_schedule_grid(df):
     games = []
+    standings = get_season_end_standings_df(get_current_season())
+    last_10 = get_most_recent_games(num=10)
+
+    
     for _, row in df.iterrows():
         home_abv = get_team_abv(row['home_team_id'])
         away_abv = get_team_abv(row['away_team_id'])
@@ -580,6 +684,9 @@ def make_schedule_grid(df):
 
         home_logo = get_logo(team_id=row['home_team_id'])
         away_logo = get_logo(team_id=row['away_team_id'])
+
+        interest_icons_home = make_interest_icons(row['home_team_id'], standings, last_10)
+        interest_icons_away = make_interest_icons(row['away_team_id'], standings, last_10)
 
         score_section = None
         if pd.notnull(row['away_score']) and pd.notnull(row['home_score']):
@@ -593,10 +700,18 @@ def make_schedule_grid(df):
                         html.P(f"{game_id:08d}")  # Format game_id as an 8-digit number
                     ], className="ticket-sub"),
                     html.Section([
-                        html.Img(src=away_logo, alt=f"{away_abv} logo"),
-                        html.Img(src=home_logo, alt=f"{home_abv} logo"),
-                        html.P(f"{game_date} - {game_start_etc.strftime('%I:%M %p')} EST")
-                    ], className="ticket-main")  # Empty ticket-main for simplicity
+                        html.Div([
+                            html.Img(src=away_logo, alt=f"{away_abv} logo"),
+                            html.Img(src=home_logo, alt=f"{home_abv} logo")
+                        ], className="logos"),
+                        html.P(f"{game_date} - {game_start_etc.strftime('%I:%M %p')} EST", className="game-time"),
+                        html.Div([
+                            interest_icons_away
+                        ], className="interest-icons-away"),
+                        html.Div([
+                            interest_icons_home
+                        ], className="interest-icons-home")
+                    ], className="ticket-main")
                 ], className="ticket"),
                 href=f"/NHLDashboard/game/{game_id}"
             )
@@ -1014,3 +1129,44 @@ def make_team_cusp_figure(team_id, season_id=20252026):
             "height": "800px"
         }
     )
+
+def make_interest_icons(team_id, standings, last_10_all):
+    # Placeholder icons, replace with actual icons as needed
+    last_10 = last_10_all[(last_10_all['team_id'] == team_id)]
+    #get the number of wins in the last 10 games
+    wins = 0
+    for _, row in last_10.iterrows():
+        if row['team_score'] > row['opponent_score']:
+            wins += 1
+
+    #🏁🏆🧊
+
+    streak = ""
+    if wins >= 7:
+        streak = "🔥"
+    elif wins <= 3:
+        streak = "🧊"
+
+    race = ""
+    points = standings[standings['team_id'] == team_id]['points'].values[0]
+    division = standings[standings['team_id'] == team_id]['division_name'].values[0]
+    conference = standings[standings['team_id'] == team_id]['conference_name'].values[0]
+
+    top_division_points = standings[(standings['division_name'] == division)]['points'].max()
+    top_division_games_remaining = 82 - standings[(standings['division_name'] == division) & (standings['wildcard_rank'] == 1)]['games_played'].values[0]
+
+    wildcard_points = standings[(standings['conference_name'] == conference) & (standings['wildcard_rank'] == 8)]['points'].values[0]
+
+
+    if (points > wildcard_points - (top_division_games_remaining/2) and points < wildcard_points + (top_division_games_remaining/2)) and (top_division_games_remaining < 20):
+        race = "🏁"
+    elif (points > top_division_points - (top_division_games_remaining/2)) and (top_division_games_remaining < 40):
+        race = "🏆"
+
+
+    
+
+    return html.Div([
+        html.Span(streak, className='interest-icon') if streak else [],
+        html.Span(race, className='interest-icon') if race else []
+    ])

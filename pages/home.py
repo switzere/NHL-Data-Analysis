@@ -17,10 +17,10 @@ def layout(**kwargs):
                     html.A("Visit my Website", href="https://evanswitzer.ca/", target="_blank", className="d-block mb-2"),
                     html.A("View on GitHub", href="https://github.com/switzere/NHL-Data-Analysis", target="_blank", className="d-block")
                 ], className="text-center")
-            ], width=5),
+            ], lg=5, md=5, className="d-none d-md-block"),
             dbc.Col([
                 html.H2("Today's Games", className="text-center"),
                 make_schedule_grid(todays_games)
-            ], width=7),
+            ], lg=7, md=7, sm=12, xs=12),
         ])
     ], fluid=True)

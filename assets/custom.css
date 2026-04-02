@@ -42,12 +42,18 @@ html, body {
 
 .schedule-grid-container {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 3 columns of equal width */
+    grid-template-columns: repeat(2, 1fr); /* 2 columns of equal width */
     gap: 20px; /* Add spacing between grid items */
     justify-items: center; /* Center items horizontally */
     align-items: start; /* Align items at the top */
     margin: 20px auto; /* Center the grid within its container */
     width: 100%; /* Ensure the grid takes up the full width of the container */
+}
+
+@media (max-width: 1000px) {
+    .schedule-grid-container {
+        grid-template-columns: 1fr; /* One column per row on small screens */
+    }
 }
 
 .schedule-grid-container .big-game-card {
@@ -224,6 +230,7 @@ html, body {
 	font-family: var(--font-body);
     overflow: hidden;
     box-sizing: border-box;
+    position: relative;
 }
 .ticket-sub {
 	writing-mode: vertical-rl;
@@ -304,19 +311,83 @@ html, body {
 }
 
 .ticket-main {
-	padding: 10px;
+	padding: 0;
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-    grid-template-rows: 75% 25%;
+    grid-template-rows: 80% 20%;
     width: 100%;
     border: 3px dotted grey;
+    position: relative;
 }
 
 .ticket-main P {
     font-size: 32px;
     font-weight: bold;
-    grid-column: 1 / -1;
+    grid-column: 1 / -1; /* Span across both columns */
     text-align: center;
     margin-bottom: 0px;
     text-decoration: none;
+}
+
+.ticket-main .logos {
+    grid-row: 1 / 2; /* Place in the first row */
+    grid-column: 1 / -1; /* Span across both columns */
+    display: flex;
+    justify-content: center; /* Center logos horizontally */
+    overflow: hidden; /* Hide any overflow from logos */
+}
+
+/* .ticket-main .logos::after {
+    content: "";
+    position: absolute;
+    left: 50%; 
+    width: 0px; 
+    height: 100%; 
+    transform: translateY(-20%); 
+    border: 3px dotted grey;
+} */
+
+.ticket-main .logos img {
+    max-height: 100%; /* Constrain the height of the logos */
+    max-width: 70%; /* Ensure logos scale proportionally */
+    object-fit: contain; /* Ensure logos fit within their container */
+    transform: translateY(-10%);
+    margin-left: -20px; /* Negative margin to overlap logos */
+    margin-right: -20px; /* Negative margin to overlap logos */
+    margin-bottom: -20px;
+}
+
+.ticket-main .game-time {
+    grid-row: 2 / 3; /* Place in the second row */
+    grid-column: 1 / -1; /* Span across both columns */
+    text-align: center;
+    font-size: 30px;
+    font-weight: bold;
+    border-top: 3px dotted grey;
+}
+
+.interest-icons-home, .interest-icons-away {
+    border: 3px dotted grey;
+    background-color: rgba(13, 110, 253, 0.8);
+    position: absolute; /* Position relative to the .ticket container */
+    display: flex;
+}
+
+.interest-icons-away {
+    position: absolute; /* Position relative to ticket-main */
+    top: 10px; /* Adjust to move it closer to the top */
+    left: 10px; /* Adjust to move it closer to the left */
+    justify-content: space-between;
+}
+
+.interest-icons-home {
+    position: absolute; /* Position relative to ticket-main */
+    top: 10px; /* Adjust to move it closer to the top */
+    right: 10px; /* Adjust to move it closer to the right */
+    justify-content: space-between;
+}
+
+.interest-icon {
+    font-size: 24px; /* Adjust size of the icons */
+    margin: 0 10px; /* Add spacing between icons */
 }
