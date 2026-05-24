@@ -1,0 +1,7 @@
+2026-05-24 04:15:17 | SELECT * FROM teams WHERE team_id = 27
+2026-05-24 04:15:28 | SELECT * FROM teams WHERE team_id = 27
+2026-05-24 04:16:44 | SELECT * FROM teams WHERE team_name = "New Jersey Devils"
+2026-05-24 04:18:34 | SELECT * FROM teams where team_abv = "EDM"
+2026-05-24 04:18:51 | SELECT * FROM teams where team_abbreviation = "EDM"
+2026-05-24 04:19:08 | SELECT * FROM seasons_end_standings WHERE team_id = 22 AND season_id = 20252026
+2026-05-24 04:20:28 | SElect * from seasons_end_standings where team_id = 22 and season_id = 20252026

@@ -14,28 +14,36 @@ app = dash.Dash(
     routes_pathname_prefix="/NHLDashboard/"
 )
 
-
-navbar = dbc.NavbarSimple(
-    children=[
-        dbc.NavLink("Home", href="/NHLDashboard"),
-        dbc.NavLink("Standings", href="/NHLDashboard/standings"),
-        dbc.NavLink("Teams", href="/NHLDashboard/team"),
-        #dbc.NavLink("Games", href="/NHLDashboard/game"),
-        #dbc.NavLink("Players", href="/NHLDashboard/player"),
-    ],
-    brand="NHL Dashboard",
-    brand_href="/NHLDashboard",
-    color="primary",
-    dark=True,
-    sticky="top",
-)
-
 year_dropdown = dcc.Dropdown(
     id='season-dropdown',
     options=[{'label': s, 'value': s} for s in available_seasons],
     value=available_seasons[-1],
-    clearable=False,
-    className="floating-dropdown"  # Add the floating-dropdown class directly
+    clearable=False
+)
+
+navbar = dbc.Navbar(
+    dbc.Container([
+        dbc.NavbarToggler(id="navbar-toggler", n_clicks=0),
+        
+        dbc.Collapse(
+            dbc.Nav(
+                [
+                    dbc.NavLink("Home", href="/NHLDashboard"),
+                    dbc.NavLink("Standings", href="/NHLDashboard/standings"),
+                    dbc.NavLink("Teams", href="/NHLDashboard/team"),
+                ],
+                navbar=True,
+                className="nav-links"
+            ),
+            id="navbar-collapse",
+            navbar=True,
+        ),
+       year_dropdown
+    ], className="navbar-custom"),
+    color="primary",
+    dark=True,
+    #sticky="top",
+    
 )
 
 # Schedule Row
@@ -51,7 +59,6 @@ app.layout = html.Div([
     navbar,
     html.Div([
         schedule_row,
-        year_dropdown
     ], className="dropdown-and-schedule-container-wrapper"),  # Ensure the dropdown is positioned relative to this container
     dash.page_container
 ])
@@ -76,9 +83,9 @@ def toggle_dropdown_visibility(pathname):
 
     # if pathname in dropdown_pages:
     #     return {'display': 'block'}
-    if pathname == "/NHLDashboard/standings" or pathname.startswith("/NHLDashboard/team/"):
-        return {'display': 'block'}
-    return {'display': 'none'}
+    # if pathname == "/NHLDashboard/standings" or pathname.startswith("/NHLDashboard/team/"):
+    #     return {'display': 'block'}
+    # return {'display': 'none'}
 
 @app.callback(
     Output('schedule-row-container', 'children'),
@@ -88,6 +95,16 @@ def render_schedule_row(_):
     df_schedule = get_games_around_date()
     #df_schedule = get_games_of_season()
     return make_schedule_row(df_schedule)
+
+@app.callback(
+    Output("navbar-collapse", "is_open"),
+    [Input("navbar-toggler", "n_clicks")],
+    [dash.dependencies.State("navbar-collapse", "is_open")]
+)
+def toggle_navbar(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5006, debug=False)
