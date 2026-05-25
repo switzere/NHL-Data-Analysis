@@ -55,6 +55,7 @@ html, body {
  #season-dropdown {
     grid-column: 4 / 5;
     margin-left: auto;
+    width: 100%;
  }
 
 /* ensure game cards keep their horizontal layout */

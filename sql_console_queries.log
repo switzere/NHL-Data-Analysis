@@ -5,3 +5,4 @@
 2026-05-24 04:18:51 | SELECT * FROM teams where team_abbreviation = "EDM"
 2026-05-24 04:19:08 | SELECT * FROM seasons_end_standings WHERE team_id = 22 AND season_id = 20252026
 2026-05-24 04:20:28 | SElect * from seasons_end_standings where team_id = 22 and season_id = 20252026
+2026-05-25 01:55:32 | SELECT * FROM players WhERE player_id = 8466138

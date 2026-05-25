@@ -495,7 +495,22 @@ def attach_wildcard_standings(season_end_standings_df):
 
     return season_end_standings_df
 
-        
+def search_players(player_name):
+    players_df = pd.DataFrame()
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM players
+            WHERE LOWER(skaterFullName) LIKE %s
+            LIMIT 25
+        """, (f"%{player_name.lower()}%",))
+        players_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
+    return players_df
 
 
 
@@ -549,14 +564,23 @@ def make_standings_table(df):
     )
 
 def make_team_table(df):
-    #display_columns = ['firstName','lastName', 'sweaterNumber', 'positionCode', 'heightInCentimeters', 'weightInKilograms', 'birthDate', 'birthCountry']
     display_columns = ['firstName','lastName', 'sweaterNumber', 'positionCode', 'games_played', 'goals', 'assists', 'points', 'penalty_minutes', 'plus_minus']
     rows = []
     for _, row in df.iterrows():
-        cells = [html.Td(row[col]) for col in display_columns]
+        player_id = row.get('player_id')[0]
+        # Make the first and last name a clickable link to the player page
+        name_link = (
+            dcc.Link(
+                f"{row['firstName']} {row['lastName']}",
+                href=f"/NHLDashboard/player/{player_id}",
+                className="player-link"
+            )
+            if player_id is not None else f"{row['firstName']} {row['lastName']}"
+        )
+        cells = [html.Td(name_link)] + [html.Td(row[col]) for col in display_columns[2:]]
         rows.append(html.Tr(cells))
     return dbc.Table(
-        [html.Thead(html.Tr([html.Th(col) for col in display_columns]))] +
+        [html.Thead(html.Tr([html.Th("Player")] + [html.Th(col) for col in display_columns[2:]]))] +
         [html.Tbody(rows)],
         striped=True, bordered=True, hover=True, responsive=True
     )
@@ -1170,3 +1194,17 @@ def make_interest_icons(team_id, standings, last_10_all):
         html.Span(streak, className='interest-icon') if streak else [],
         html.Span(race, className='interest-icon') if race else []
     ])
+
+def make_player_table(player_id):
+    df = get_player(player_id)
+    if df.empty:
+        return html.Div("Player not found.")
+
+    display_columns = ['player_id','skaterFullName', 'total_goals', 'total_assists', 'total_points', 'total_penalty_minutes', 'total_games_played', 'total_plus_minus', 'birth_date', 'birth_country']
+    row = df.iloc[0]
+    cells = [html.Td(row[col]) for col in display_columns]
+    return dbc.Table(
+        [html.Thead(html.Tr([html.Th(col) for col in display_columns]))] +
+        [html.Tbody([html.Tr(cells)])],
+        striped=True, bordered=True, hover=True, responsive=True
+    )

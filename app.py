@@ -31,6 +31,7 @@ navbar = dbc.Navbar(
                     dbc.NavLink("Home", href="/NHLDashboard"),
                     dbc.NavLink("Standings", href="/NHLDashboard/standings"),
                     dbc.NavLink("Teams", href="/NHLDashboard/team"),
+                    dbc.NavLink("Players", href="/NHLDashboard/player"),
                 ],
                 navbar=True,
                 className="nav-links"
