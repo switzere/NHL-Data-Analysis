@@ -6,6 +6,8 @@ from data import get_games_around_date, make_schedule_row, get_current_season, a
 
 app = dash.Dash(
     __name__,
+    title="NHL Data Dashboard",
+    update_title=None,
     use_pages=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
@@ -13,6 +15,8 @@ app = dash.Dash(
     requests_pathname_prefix="/NHLDashboard/",
     routes_pathname_prefix="/NHLDashboard/"
 )
+
+app._favicon = ("7s_64.png")
 
 year_dropdown = dcc.Dropdown(
     id='season-dropdown',
