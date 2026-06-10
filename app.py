@@ -2,7 +2,7 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
-from data import get_games_around_date, make_schedule_row, get_current_season, available_seasons, get_games_of_season
+from data import get_games_around_date, make_schedule_row, available_seasons
 
 app = dash.Dash(
     __name__,
