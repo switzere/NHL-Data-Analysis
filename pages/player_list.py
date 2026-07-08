@@ -2,9 +2,11 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
-from data import connection_pool, get_logo, get_team_name, search_players
 import pandas as pd
 from dash import callback, no_update
+
+from data import connection_pool, get_logo, get_team_name, search_players
+from make_ui import make_player_table
 
 
 dash.register_page(__name__, path="/player", name="Players")

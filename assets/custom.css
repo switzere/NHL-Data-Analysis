@@ -3,10 +3,16 @@
 }
 
 :root {
-	--color-primary: #e0e0e0;
+	--color-primary: #ffffff/*#f7ecd8;*/
 	--color-secondary: #0d6efd;
 	--color-tertiary: #0d6efd;
 	--color-bg: #ffffff;
+    --color-ticket: #cecece;
+
+    --color-secondary-hover: #0543a0;
+    --color-ticket-hover: #c0c0c0;
+    --color-ticket-border: #6e6e6e;
+    --color-bg-hover: #eeeeee;
 }
 
 html, body {
@@ -27,12 +33,13 @@ html, body {
     max-width: 100% !important; 
     padding-left: 40px !important;
     padding-right: 40px !important;
-
+    background: var(--color-secondary);
 }
 
 .navbar {
     padding-top: 8px !important;
     padding-bottom: 8px !important;
+    border: none;
 }
 
 
@@ -49,13 +56,22 @@ html, body {
 .nav-links {
     grid-column: 3 / 4;
     gap: 20px;
-    padding-right: 100px;
+}
+
+.nav-link {
+    border: 2px solid #000000;
+    color: white;
+}
+
+.nav-link:hover {
+    background-color: var(--color-secondary-hover);
 }
 
  #season-dropdown {
     grid-column: 4 / 5;
     margin-left: auto;
     width: 100%;
+    background: var(--color-bg);
  }
 
 /* ensure game cards keep their horizontal layout */
@@ -63,7 +79,7 @@ html, body {
     display: flex;
     flex-direction: column;
     overflow: visible;
-    background: #ffffff;
+    background: var(--color-bg);
     max-width: 100%;
     box-sizing: border-box;
 }
@@ -77,6 +93,55 @@ html, body {
     width: 100%; /* will match the .horizontal-scroll__inner width */
     gap: 0;
 }
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    /* force row height */
+    grid-auto-rows: 120px;
+}
+
+.team-link {
+    display: grid;
+    border: 1px solid #000000;
+    text-align: center;
+    font-weight: bold;
+    /* force text to fit in box by changing font size */
+    font-size: 1.2em;
+
+}
+
+.team-link-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.team-link:hover {
+    background-color: var(--color-bg-hover);
+}
+
+.team-name {
+    padding-right: 2%;
+    padding-left: 2%;
+}
+
+.team-logo {
+    width: 80%;
+    /* opacity: 50%; */
+    overflow: hidden;
+    position: relative;
+    padding-left: 2%;
+
+}
+
+.team-name {
+    margin: 0;
+}
+
+
+
 
 .schedule-grid-container {
     display: grid;
@@ -111,7 +176,7 @@ html, body {
 }
 
 .big-game-card:hover {
-    background-color: #e9ecef;
+    background-color: var(--color-bg-hover);
 }
 
 .schedule-date {
@@ -142,16 +207,11 @@ html, body {
     min-width: max-content; /* ensures it grows to fit children */
 }
 
-/* optional: keep the scrollbar visible and make padding consistent */
-.horizontal-scroll__wrapper {
-    padding-bottom: 8px; /* space for scrollbar on some platforms */
-}
-
 .game-card {
     min-width: 120px;
     height: 100%;
     border: 1px solid #000000;
-    background: #fff;
+    background: var(--color-bg);
     flex: 0 0 auto;
     
     text-align: center;
@@ -165,7 +225,7 @@ html, body {
     font-weight: bold;
 }
 .game-card:hover {
-    background-color: #e9ecef;
+    background-color: var(--color-bg-hover);
 }
 
 .game-card .date {
@@ -215,7 +275,7 @@ html, body {
     top: 200px;               /* Adjust as needed */
     right: 10px;             /* Adjust as needed */
     width: 220px;
-    background-color: white;
+    background-color: var(--color-bg);
     border: 1px solid black;
     border-radius: 0;
 }
@@ -236,15 +296,29 @@ html, body {
     max-width: none;     
 }
 
+.home {
+    padding: 10px;
+    padding-top: 20px;
+}
+
+.home-left {
+    padding: 10px;
+    border: 1px solid black;
+}
+
+.home-right {
+    padding: 10px;
+    border: 1px solid black;
+}
 
 
 
 
 
 
-
-
-
+body {
+    background-color: var(--color-bg);
+}
 
 
 
@@ -259,7 +333,7 @@ html, body {
 }
 
 .ticket {
-	background-color: var(--color-primary);
+	background-color: var(--color-ticket);
 	color: var(--color-secondary);
 	width: 100%;
 
@@ -270,6 +344,11 @@ html, body {
     box-sizing: border-box;
     position: relative;
 }
+
+.ticket:hover{
+    background-color: var(--color-ticket-hover);
+}
+
 .ticket-sub {
 	writing-mode: vertical-rl;
 	text-orientation: mixed;
@@ -278,8 +357,8 @@ html, body {
 	border-right: 6px dotted var(--color-bg);
 	position: relative;
 	z-index: 1;
-    border-bottom: 3px dotted grey;
-    border-top: 3px dotted grey;
+    border-bottom: 3px dotted var(--color-ticket-border);
+    border-top: 3px dotted var(--color-ticket-border);
 
 }
 .ticket-sub::before,
@@ -325,7 +404,7 @@ html, body {
 	font-size: 18px;
 	letter-spacing: 8px;
 	font-weight: 500;
-	padding: 14px 4px 14px 0;
+	padding: 14px 0px 14px 0;
 	text-align: center;
     margin-bottom: 0px;
 }
