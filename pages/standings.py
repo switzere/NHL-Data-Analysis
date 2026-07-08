@@ -2,8 +2,9 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
-from data import get_season_end_standings_df, make_standings_table
 import pandas as pd
+from data import get_season_end_standings_df
+from make_ui import make_standings_table
 
 dash.register_page(__name__, path="/standings", name="Standings")
 

@@ -2,7 +2,8 @@ import dash
 from dash import html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
-from data import get_roster_players_df, make_team_table, get_team_schedule_df, make_schedule_row, get_logo, slug_to_name_and_id_and_abv, get_teams_ordered, make_team_cusp_figure
+from data import get_roster_players_df, get_team_schedule_df, get_logo, slug_to_name_and_id_and_abv, get_teams_ordered
+from make_ui import make_team_table, make_schedule_row, make_team_cusp_figure
 
 dash.register_page(__name__, path_template="/team/<team_slug>", name="Team Page")  
 

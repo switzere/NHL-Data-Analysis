@@ -2,7 +2,8 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
-from data import get_games_around_date, make_schedule_row, get_current_season, available_seasons, get_games_of_season
+from data import get_games_around_date, available_seasons
+from make_ui import make_schedule_row
 
 app = dash.Dash(
     __name__,
@@ -45,8 +46,7 @@ navbar = dbc.Navbar(
         ),
        year_dropdown
     ], className="navbar-custom"),
-    color="primary",
-    dark=True,
+    className="navbar-top",
     #sticky="top",
     
 )
@@ -80,9 +80,10 @@ def update_selected_season(selected_season):
     Input('url', 'pathname')
 )
 def toggle_dropdown_visibility(pathname):
-    #print(f"Current pathname: {pathname}")  # Debugging
-    if pathname.endswith('/'):
-        pathname = pathname[:-1]
+    pathname = (pathname or "").rstrip("/")
+    if pathname in ("/NHLDashboard/standings",) or pathname.startswith("/NHLDashboard/team/"):
+        return {"display": "block"}
+    return {"display": "none"}
 
     # dropdown_pages = ["/NHLDashboard/standings", "/NHLDashboard/team/<team_slug>"]
 
