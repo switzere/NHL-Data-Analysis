@@ -401,15 +401,15 @@ def make_scoresheet(df_game, df_events):
 def make_scoresheet_team_side(df_events, team_id):
     #get goals, assists, penalties, shots from events table for players on the away team from df
     team_df = df_events[df_events['event_owner_team_id'] == team_id]
-    team_df['type_desc_key'] = team_df['type_desc_key'].str.capitalize()
+    #team_df['type_desc_key'] = team_df['type_desc_key'].str.capitalize()
 
-    team_df = team_df[team_df['type_desc_key'].isin(['Goal', 'Penalty', 'Shot' ])]
+    team_df = team_df[team_df['type_desc_key'].isin(['goal', 'penalty', 'shot' ])]
     #event_id, period_number, period_type, time_in_period, time_remaining, situation_code, type_code, type_desc_key, sort_order, x_coord, y_coord, zone_code, shot_type, blocking_Player_id, shooting_player_id, goalie_in_net_id, player_id, event_owner_team_id, away_sog, home_sog, hitting_player_id, hittee_player_id, reason, secondary_reason, losing_player_id, winning_player_id, scoring_player_id, assist1_player_id, assist2_player_id, highlight_clip_sharing_url, duration, served_by_player_id, drawn_by_player_id, committed_by_player_id
 
     team_sc_df = pd.DataFrame()
     #for each row if it is a goal get the scoring_player_id, assist1_player_id, assist2_player_id
     for _, event in team_df.iterrows():
-        if event['type_desc_key'] == 'Goal':
+        if event['type_desc_key'] == 'goal':
             scoring_player_id = event['scoring_player_id']
             assist1_player_id = event['assist1_player_id']
             assist2_player_id = event['assist2_player_id']
@@ -424,8 +424,8 @@ def make_scoresheet_team_side(df_events, team_id):
                 'event_player_owner_name': data.get_player_name(scoring_player_id)
             }
 
-        elif event['type_desc_key'] == 'Penalty':
-            committed_by_player_id = event['committed_by_player_id']
+        elif event['type_desc_key'] == 'penalty':
+            committed_by_player_id = event.get('committed_by_player_id') if pd.notnull(event.get('committed_by_player_id')) else event.get('served_by_player_id')
             new_row = {
                 'type_desc_key': 'Penalty',
                 'period_number': event['period_number'],
@@ -434,7 +434,7 @@ def make_scoresheet_team_side(df_events, team_id):
                 'event_player_owner_name': data.get_player_name(committed_by_player_id)
             }
 
-        elif event['type_desc_key'] == 'Shot':
+        elif event['type_desc_key'] == 'shot':
             shooting_player_id = event['shooting_player_id']
             new_row = {
                 'type_desc_key': 'Shot',
@@ -661,15 +661,18 @@ def make_interest_icons(team_id, standings, last_10_all):
     ])
 
 def make_player_table(player_id):
-    df = data.get_player(player_id)
+    df = data.get_player_seasons(player_id)
     if df.empty:
         return html.Div("Player not found.")
 
-    display_columns = ['player_id','skaterFullName', 'total_goals', 'total_assists', 'total_points', 'total_penalty_minutes', 'total_games_played', 'total_plus_minus', 'birth_date', 'birth_country']
-    row = df.iloc[0]
-    cells = [html.Td(row[col]) for col in display_columns]
+    #display_columns = ['player_id','skaterFullName', 'total_goals', 'total_assists', 'total_points', 'total_penalty_minutes', 'total_games_played', 'total_plus_minus', 'birth_date', 'birth_country']
+    display_columns = ['goals', 'assists', 'points', 'penalty_minutes', 'games_played', 'season_id', 'team_abbreviations', 'time_on_ice_per_game']
+    rows = []
+    for _, r in df.iterrows():
+        cells = [html.Td(r[col]) for col in display_columns]
+        rows.append(html.Tr(cells))
     return dbc.Table(
         [html.Thead(html.Tr([html.Th(col) for col in display_columns]))] +
-        [html.Tbody([html.Tr(cells)])],
+        [html.Tbody(rows)],
         striped=True, bordered=True, hover=True, responsive=True
     )

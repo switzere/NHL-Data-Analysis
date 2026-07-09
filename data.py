@@ -419,7 +419,7 @@ def get_player_seasons(player_id):
         cursor.execute("""
             SELECT * FROM players_season
             WHERE player_id = %s
-            ORDER BY season_id DESC
+            ORDER BY season_id ASC
         """, (player_id,))
         player_seasons_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
     finally:
