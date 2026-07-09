@@ -19,6 +19,9 @@ def layout(player_id=None, **kwargs):
 
     return dbc.Container([
         dbc.Row(
+            dbc.Col(html.H1(f"{player_name} ({player_id})", className="text-center my-4"), width=12)
+        ),
+        dbc.Row(
             dbc.Col([make_player_table(player_id)], width=12)
         )
     ])
