@@ -554,3 +554,59 @@ body::after {
     font-size: 24px; /* Adjust size of the icons */
     margin: 0 10px; /* Add spacing between icons */
 }
+
+
+
+
+
+
+
+
+
+
+
+.team-NJD { --team-primary:#CE1126; --team-secondary:#000000; --team-tertiary:#FFFFFF; }
+.team-NYI { --team-primary:#00539B; --team-secondary:#f47d30; --team-tertiary:#FFFFFF; }
+.team-NYR { --team-primary:#0038A8; --team-secondary:#CE1126; --team-tertiary:#FFFFFF; }
+.team-PHI { --team-primary:#F74902; --team-secondary:#000000; --team-tertiary:#FFFFFF; }
+.team-PIT { --team-primary:#FCB514; --team-secondary:#000000; --team-tertiary:#CFC493; }
+.team-BOS { --team-primary:#FFB81C; --team-secondary:#000000; --team-tertiary:#FFFFFF; }
+.team-BUF { --team-primary:#003087; --team-secondary:#FFB81C; --team-tertiary:#FFFFFF; }
+.team-MTL { --team-primary:#AF1E2D; --team-secondary:#192168; --team-tertiary:#FFFFFF; }
+.team-OTT { --team-primary:#DA1A32; --team-secondary:#000000; --team-tertiary:#B79257; }
+.team-TOR { --team-primary:#00205b; --team-secondary:#FFFFFF; --team-tertiary:#FFFFFF; }
+.team-ATL { --team-primary:#041E42; --team-secondary:#5c88da; --team-tertiary:#862633; --team-extra-1:#b86125; --team-extra-2: #ffa300;}
+.team-CAR { --team-primary:#CE1126; --team-secondary:#000000; --team-tertiary:#FFFFFF; --team-extra-1:#A4A9AD; }
+.team-FLA { --team-primary:#041E42; --team-secondary:#c8102E; --team-tertiary:#B9975B; }
+.team-TBL { --team-primary:#002868; --team-secondary:#FFFFFF; --team-tertiary:#FFFFFF; }
+.team-WSH { --team-primary:#041E42; --team-secondary:#C8102E; --team-tertiary:#FFFFFF; }
+.team-CHI { --team-primary:#CE1126; --team-secondary:#000000; --team-tertiary:#FFFFFF; }
+.team-DET { --team-primary:#CE1126; --team-secondary:#FFFFFF; --team-tertiary:#FFFFFF; }
+.team-NSH { --team-primary:#FFB81C; --team-secondary:#041E42; --team-tertiary:#FFFFFF; }
+.team-STL { --team-primary:#002F87; --team-secondary:#FCB514; --team-tertiary:#041E42; }
+.team-CGY { --team-primary:#C8102E; --team-secondary:#F1BE48; --team-tertiary:#000000; }
+.team-COL { --team-primary:#6F263D; --team-secondary:#236192; --team-tertiary:#A2AAAD; --team-extra-1:#000000; }
+.team-EDM { --team-primary:#041E42; --team-secondary:#FF4C00; --team-tertiary:#FFFFFF; }
+.team-VAN { --team-primary:#00205B; --team-secondary:#00843d; --team-tertiary:#041C2C; --team-extra-1:#99999A; --team-extra-2:#FFFFFF; }
+.team-ANA { --team-primary:#F47A38; --team-secondary:#000000; --team-tertiary:#FFFFFF; --team-extra-1:#B9975B; --team-extra-2:#C1C6C8; }
+.team-DAL { --team-primary:#006847; --team-secondary:#8F8F8C; --team-tertiary:#111111; }
+.team-LAK { --team-primary:#111111; --team-secondary:#A2AAAD; --team-tertiary:#FFFFFF; }
+.team-PHX { --team-primary:#8C2633; --team-secondary:#ffffff; --team-tertiary:#154734; }
+.team-SJS { --team-primary:#006D75; --team-secondary:#EA7200; --team-tertiary:#000000; }
+.team-CBJ { --team-primary:#002654; --team-secondary:#ce1126; --team-tertiary:#A4A9AD; }
+.team-MIN { --team-primary:#154734; --team-secondary:#A6192E; --team-tertiary:#EAAA00; --team-extra-1:#DDCBA4; }
+.team-MNS { --team-primary:#009639; --team-secondary:#ffd100; --team-tertiary:#FFFFFF; }
+.team-QUE { --team-primary:#005EB8; --team-secondary:#DA291C; --team-tertiary:#FFFFFF; }
+.team-WIN { --team-primary:#041E42; --team-secondary:#AC162C; --team-tertiary:#FFFFFF; }
+.team-HFD { --team-primary:#046A38; --team-secondary:#00205B; --team-tertiary:#FFFFFF; }
+.team-CLR { --team-primary:#0038A8; --team-secondary:#CE1126; --team-tertiary:#FFB81C; }
+.team-OAK { --team-primary:#00965e; --team-secondary:#00205b; --team-tertiary:#ffc72c; }
+.team-AFM { --team-primary:#c8102e; --team-secondary:#ffffff; --team-tertiary:#ffd100; }
+.team-KCS { --team-primary:#004687; --team-secondary:#E4002B; --team-tertiary:#FFFFFF; }
+.team-CLE { --team-primary:#c8102e; --team-secondary:#ffffff; --team-tertiary:#000000; }
+.team-WPG { --team-primary:#041E42; --team-secondary:#ffffff; --team-tertiary:#004C97; --team-extra-1:#AC162C; }
+.team-ARI { --team-primary:#8C2633; --team-secondary:#ffffff; --team-tertiary:#154734; }
+.team-VGK { --team-primary:#B4975A; --team-secondary:#333f42; --team-tertiary:#FFFFFF; --team-extra-1:#c8102E; }
+.team-SEA { --team-primary:#001628; --team-secondary:#96d8d8; --team-tertiary:#e9072b; --team-extra-1:#639fb6; }
+.team-CGS { --team-primary:#ffc72c; --team-secondary:#00965e; --team-tertiary:#FFFFFF; }
+.team-UTA { --team-primary:#010101; --team-secondary:#6cace4; --team-tertiary:#FFFFFF; }

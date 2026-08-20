@@ -8,3 +8,4 @@
 2026-05-25 01:55:32 | SELECT * FROM players WhERE player_id = 8466138
 2026-08-19 06:01:51 | SELECT headshot_url FROM roster_players WHERE player_id = 8470613
 
+2026-08-20 00:33:38 | SELECT team_abbreviation FROM teams
