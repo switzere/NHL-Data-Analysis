@@ -20,7 +20,7 @@ def layout(**kwargs):
                 dbc.Button("Search", id="player-search-btn", color="primary", className="mb-3 ms-2"),
                 html.Div(id="player-search-results")
             ], width=12)
-        ])
+        ], className="common-text")
     ], fluid=True)
 
 @callback(

@@ -11,6 +11,7 @@ def layout(**kwargs):
     for _, team in teams_df.iterrows():
         team_name = team['team_name']
         team_id = team['team_id']
+        team_abv = team['team_abbreviation']
         slug = team_name.replace(' ', '-').lower()
         logo_src = get_logo(team_id=team_id)
         team_links.append(
@@ -20,10 +21,10 @@ def layout(**kwargs):
                     html.Div(team_name, className="team-name")
                 ], className="team-link-content"),
                 href=f"/NHLDashboard/team/{slug}",
-                className="team-link"
+                className=f"team-link team-{team_abv}"
             )
         )
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H1("Select a Team", className="text-center my-4"), width=12)),
+        dbc.Row(dbc.Col(html.H1("Select a Team", className="text-center my-4 common-text"), width=12)),
         dbc.Row(dbc.Col(html.Div(team_links, className="team-grid"), width=12))
     ], fluid=True)

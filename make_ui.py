@@ -274,13 +274,13 @@ def make_game_page(game_id):
             html.Img(src=data.get_logo(team_id=row['away_team_id']), alt=f"{away_abv} logo", style={"height": "60px", "marginRight": "1em"}),
             html.H2(f"{away_abv} @ {home_abv}", style={"margin": "0 1em", "textAlign": "center"}),
             html.Img(src=data.get_logo(team_id=row['home_team_id']), alt=f"{home_abv} logo", style={"height": "60px", "marginLeft": "1em"}),
-        ], style={"display": "flex", "alignItems": "center", "justifyContent": "center"}),
+        ], style={"display": "flex", "alignItems": "center", "justifyContent": "center"}, className="mb-4 common-text"),
         # Row: score and date, centered below
         html.Div([
             html.H2(f"{score_or_time}", className="text-center mb-4"),
             html.H2(f"{row['date']}", className="text-center mb-4")
         ], style={"textAlign": "center", "width": "100%"})
-    ], style={"display": "flex", "flexDirection": "column", "alignItems": "center", "justifyContent": "center"})
+    ], style={"display": "flex", "flexDirection": "column", "alignItems": "center", "justifyContent": "center"}, className="common-text")
 
     scoresheet = html.Div()
     if not df_events.empty:
@@ -378,14 +378,14 @@ def make_scoresheet(df_game, df_events):
                 html.Div([
                     html.Img(src=away_logo, alt=f"{away_name} logo", style={"height": "30px", "marginRight": "10px"}),
                     html.H4(f"{away_name}", className="text-center", style={"display": "inline-block", "verticalAlign": "middle"})
-                ], className="text-center"),
+                ], className="text-center common-text"),
                 width=6
             ),
             dbc.Col(
                 html.Div([
                     html.Img(src=home_logo, alt=f"{home_name} logo", style={"height": "30px", "marginRight": "10px"}),
                     html.H4(f"{home_name}", className="text-center", style={"display": "inline-block", "verticalAlign": "middle"})
-                ], className="text-center"),
+                ], className="text-center common-text"),
                 width=6
             )
         ]),
@@ -676,3 +676,33 @@ def make_player_table(player_id):
         [html.Tbody(rows)],
         striped=True, bordered=True, hover=True, responsive=True
     )
+
+def make_player_page(player_id):
+    player = data.get_player(player_id)
+    player_name = data.get_player_name(player_id) 
+
+    if player.empty:
+        return html.Div("Player not found.")
+
+    player_table = make_player_table(player_id)
+
+    player_roster_df = data.get_player_from_roster(player_id)
+    headshot_url = player_roster_df['headshot_url'].values[0] if not player_roster_df.empty else None
+
+    player_name = player['skaterFullName'].values[0]
+    player_position = player['positionCode'].values[0]
+    player_birth_date = player['birth_date'].values[0]
+    player_birth_country = player['birth_country'].values[0]
+
+    #player_events = data.get_player_events(player_id)
+
+
+    return dbc.Container([
+        dbc.Row([
+            dbc.Col(html.H1(f"{player_name} ({player_id})", className="text-center my-4 common-text"), width=8),
+            dbc.Col(html.Img(src=headshot_url, height="100px"), width=4) if headshot_url else []
+        ]),
+        dbc.Row([
+            dbc.Col([player_table], width=12)
+        ])
+    ])

@@ -54,20 +54,20 @@ def update_standings(selected_season):
             divisions = sorted([d for d in conf_df['Division'].unique() if pd.notnull(d)])
             division_tables = [
                 html.Div([
-                    html.H3(division, className="text-center"),
+                    html.H3(division, className="text-center common-text"),
                     make_standings_table(conf_df[conf_df['Division'] == division])
                 ]) for division in divisions
             ]
             conference_tables.append(
-                dbc.Col([html.H2(conf, className="text-center"), *division_tables], width=6)
+                dbc.Col([html.H2(conf, className="text-center common-text"), *division_tables], width=6)
             )
         else:
             # No divisions, just show the conference table
             conference_tables.append(
-                dbc.Col([html.H2(conf, className="text-center"), make_standings_table(conf_df)], width=6)
+                dbc.Col([html.H2(conf, className="text-center common-text"), make_standings_table(conf_df)], width=6)
             )
 
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H1(f"NHL Standings {selected_season}", className="text-center my-4"), width=12)),
+        dbc.Row(dbc.Col(html.H1(f"NHL Standings {selected_season}", className="text-center my-4 common-text"), width=12)),
         dbc.Row(conference_tables)
     ], fluid=True)

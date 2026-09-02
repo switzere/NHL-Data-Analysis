@@ -13,6 +13,9 @@
     --color-ticket-hover: #c0c0c0;
     --color-ticket-border: #6e6e6e;
     --color-bg-hover: #eeeeee;
+
+    --color-text: #ffffff;
+    --color-text-border: #000000;
 }
 /* body {
     background-color: var(--color-bg);
@@ -66,7 +69,11 @@ body::after {
     filter: blur(2px) saturate(7);
 }
 
-
+.common-text {
+    color: var(--color-text);
+    text-shadow: var(--color-text-border) 0px 0px 2px,   var(--color-text-border) 0px 0px 2px,   var(--color-text-border) 0px 0px 2px,
+             var(--color-text-border) 0px 0px 2px,   var(--color-text-border) 0px 0px 2px,   var(--color-text-border) 0px 0px 2px;
+}
 
 /* * {
     outline: 1px solid red;
@@ -152,22 +159,25 @@ body::after {
 
 .team-link {
     display: grid;
-    border: 1px solid #000000;
+    border: 2px solid var(--team-primary, #000000); 
     text-align: center;
     font-weight: bold;
     /* force text to fit in box by changing font size */
     font-size: 1.2em;
-
+    background-color: rgba(122, 122, 122, 0.3);
 }
 
 .team-link-content {
     display: flex;
     align-items: center;
     justify-content: center;
+    color: white;
+    text-shadow: #000 0px 0px 2px,   #000 0px 0px 2px,   #000 0px 0px 2px,
+             #000 0px 0px 2px,   #000 0px 0px 2px,   #000 0px 0px 2px;
 }
 
 .team-link:hover {
-    background-color: var(--color-bg-hover);
+    background-color: var(--team-secondary, #ffffff);
 }
 
 .team-name {
@@ -589,7 +599,7 @@ body::after {
 .team-EDM { --team-primary:#041E42; --team-secondary:#FF4C00; --team-tertiary:#FFFFFF; }
 .team-VAN { --team-primary:#00205B; --team-secondary:#00843d; --team-tertiary:#041C2C; --team-extra-1:#99999A; --team-extra-2:#FFFFFF; }
 .team-ANA { --team-primary:#F47A38; --team-secondary:#000000; --team-tertiary:#FFFFFF; --team-extra-1:#B9975B; --team-extra-2:#C1C6C8; }
-.team-DAL { --team-primary:#006847; --team-secondary:#8F8F8C; --team-tertiary:#111111; }
+.team-DAL { --team-primary:#006847; --team-secondary:#000000; --team-tertiary:#111111; }
 .team-LAK { --team-primary:#111111; --team-secondary:#A2AAAD; --team-tertiary:#FFFFFF; }
 .team-PHX { --team-primary:#8C2633; --team-secondary:#ffffff; --team-tertiary:#154734; }
 .team-SJS { --team-primary:#006D75; --team-secondary:#EA7200; --team-tertiary:#000000; }
