@@ -6,3 +6,17 @@
 2026-05-24 04:19:08 | SELECT * FROM seasons_end_standings WHERE team_id = 22 AND season_id = 20252026
 2026-05-24 04:20:28 | SElect * from seasons_end_standings where team_id = 22 and season_id = 20252026
 2026-05-25 01:55:32 | SELECT * FROM players WhERE player_id = 8466138
+2026-08-19 06:01:51 | SELECT headshot_url FROM roster_players WHERE player_id = 8470613
+
+2026-08-20 00:33:38 | SELECT team_abbreviation FROM teams
+2026-08-20 01:52:46 | SELECT * FROM teams where team_abv = "KCS"
+2026-08-20 01:53:01 | SELECT * FROM teams where team_abbreviation = "KCS"
+2026-08-20 01:53:21 | SELECT * FROM season_end_standings where team_id = 48
+2026-08-20 01:53:28 | SELECT * FROM seasons_end_standings where team_id = 48
+2026-08-22 01:24:12 | SELECT * FROM roster_players WHERE player_id = 8470613
+2026-08-23 02:47:45 | SELECTW * FROM events where player_id = "8470613"
+2026-08-23 02:48:26 | SELECT * FROM events where player_id = "8470613"
+2026-08-23 02:48:28 | SELECT * FROM events where player_id = "8470613"
+2026-09-08 02:31:17 |             SELECT * FROM players
+            WHERE LOWER(first_name || ' ' || last_name) LIKE LOWER(sidney crosby)
+            LIMIT 25;
