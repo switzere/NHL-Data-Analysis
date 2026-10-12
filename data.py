@@ -240,6 +240,22 @@ def get_game_events_df(game_id):
         connection.close()
     return events_df
 
+# def get_player_events(player_id):
+#     events_df = pd.DataFrame()
+
+#     connection = connection_pool.get_connection()
+#     try:
+#         cursor = connection.cursor()
+#         cursor.execute("""
+#             SELECT * FROM events
+#             WHERE player_id = %s
+#         """, (player_id,))
+#         events_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+#     finally:
+#         cursor.close()
+#         connection.close()
+#     return events_df
+
 def get_games_of_season(season = None):
     if season is None:
         season = get_current_season()
@@ -404,8 +420,10 @@ def get_player_name(player_id, default="Unknown"):
         df = get_player(player_id)
         if df.empty:
             return default
-        if 'skaterFullName' in df.columns and not pd.isnull(df['skaterFullName'].values[0]):
-            return str(df['skaterFullName'].values[0])
+        if 'first_name' in df.columns and 'last_name' in df.columns and not pd.isnull(df['first_name'].values[0]) and not pd.isnull(df['last_name'].values[0]):
+            return f"{df['first_name'].values[0]} {df['last_name'].values[0]}"
+        # if 'skater_full_name' in df.columns and not pd.isnull(df['skater_full_name'].values[0]):
+        #     return str(df['skater_full_name'].values[0])
         return default
     except Exception:
         return default
@@ -427,12 +445,32 @@ def get_player_seasons(player_id):
         connection.close()
     return player_seasons_df
 
+def get_player_from_roster(player_id, season_id=None):
+    if season_id is None:
+        season_id = get_current_season()
+
+    player_df = pd.DataFrame()
+
+    connection = connection_pool.get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM roster_players
+            WHERE player_id = %s AND season_id = %s
+            ORDER BY season_id DESC
+        """, (player_id, season_id))
+        player_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])
+    finally:
+        cursor.close()
+        connection.close()
+    return player_df
+
 def get_teams_ordered():
     connection = connection_pool.get_connection()
     try:
         cursor = connection.cursor()
         cursor.execute("""
-            SELECT s.team_id, MAX(s.season_id) AS last_season, t.team_name
+            SELECT s.team_id, MAX(s.season_id) AS last_season, t.team_name, t.team_abbreviation
             FROM seasons_end_standings s
             JOIN teams t ON s.team_id = t.team_id
             WHERE s.games_played > 0
@@ -522,7 +560,7 @@ def search_players(player_name):
         cursor = connection.cursor()
         cursor.execute("""
             SELECT * FROM players
-            WHERE LOWER(skaterFullName) LIKE %s
+            WHERE LOWER(last_name) LIKE %s
             LIMIT 25
         """, (f"%{player_name.lower()}%",))
         players_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])

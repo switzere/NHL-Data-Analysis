@@ -27,5 +27,5 @@ def layout(**kwargs):
                 make_schedule_grid(todays_games)
                 ], className="home-right")
             ], lg=7, md=7, sm=12, xs=12),
-        ], className="home")
+        ], className="home common-text")
     ], fluid=True)

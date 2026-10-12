@@ -52,16 +52,16 @@ def update_team_page(selected_season, pathname):
                 html.H1([
                     html.Img(src=img_src, alt=f"{team_slug} logo", style={"height": "60px", "marginRight": "1em", "verticalAlign": "middle"}),
                     f"{team_name} ({selected_season})"
-                ], className="text-center my-4"),
+                ], className="text-center my-4 common-text"),
             ], width=12)
         ),
         dbc.Row(
-            dbc.Col([html.H2(f"Schedule"), make_schedule_row(df_schedule)], width=12)
+            dbc.Col([html.H2("Schedule", className="text-center common-text"), make_schedule_row(df_schedule)], width=12)
             ),
         dbc.Row(
-            dbc.Col([html.H2("CUSP Graph", className="text-center"), make_team_cusp_figure(team_id=team_id, season_id=selected_season)], width=12)
+            dbc.Col([html.H2("CUSP Graph", className="text-center common-text"), make_team_cusp_figure(team_id=team_id, season_id=selected_season)], width=12)
             ),
         dbc.Row([
-            dbc.Col([html.H2("Roster", className="text-center"), make_team_table(df_roster)], width=12)
+            dbc.Col([html.H2("Roster", className="text-center common-text"), make_team_table(df_roster)], width=12)
         ])
     ], fluid=True)
