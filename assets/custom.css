@@ -6,7 +6,7 @@
 	--color-primary: #ffffff/*#f7ecd8;*/
 	--color-secondary: #0d6efd;
 	--color-tertiary: #0d6efd;
-	--color-bg: #ffffff;
+	--color-bg: #5600a7;
     --color-ticket: #cecece;
 
     --color-secondary-hover: #0543a0;
@@ -565,11 +565,36 @@ body::after {
     margin: 0 10px; /* Add spacing between icons */
 }
 
+.card-body {
+    border: 10px solid transparent;
+    border-image: linear-gradient(44deg, #91f0ff, #d0d0d0, #91f0ff) 1;
+    padding: 8px;
+    background: #fff;
+    margin-top: 2%;
+    margin-bottom: 2%;
+    margin-right: 5%;
+}
 
+.card-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
 
+.card-text {
+    font-size: 18px;
+    margin-bottom: 8px;
+}
 
+.card-image {
+    margin-bottom: 12px;
+}
 
-
+/* .player-details {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 12px;
+} */
 
 
 

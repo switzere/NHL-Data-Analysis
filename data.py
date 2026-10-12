@@ -420,8 +420,10 @@ def get_player_name(player_id, default="Unknown"):
         df = get_player(player_id)
         if df.empty:
             return default
-        if 'skaterFullName' in df.columns and not pd.isnull(df['skaterFullName'].values[0]):
-            return str(df['skaterFullName'].values[0])
+        if 'first_name' in df.columns and 'last_name' in df.columns and not pd.isnull(df['first_name'].values[0]) and not pd.isnull(df['last_name'].values[0]):
+            return f"{df['first_name'].values[0]} {df['last_name'].values[0]}"
+        # if 'skater_full_name' in df.columns and not pd.isnull(df['skater_full_name'].values[0]):
+        #     return str(df['skater_full_name'].values[0])
         return default
     except Exception:
         return default
@@ -558,7 +560,7 @@ def search_players(player_name):
         cursor = connection.cursor()
         cursor.execute("""
             SELECT * FROM players
-            WHERE LOWER(skaterFullName) LIKE %s
+            WHERE LOWER(last_name) LIKE %s
             LIMIT 25
         """, (f"%{player_name.lower()}%",))
         players_df = pd.DataFrame(cursor.fetchall(), columns=[i[0] for i in cursor.description])

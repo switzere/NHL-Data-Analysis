@@ -686,23 +686,49 @@ def make_player_page(player_id):
 
     player_table = make_player_table(player_id)
 
-    player_roster_df = data.get_player_from_roster(player_id)
-    headshot_url = player_roster_df['headshot_url'].values[0] if not player_roster_df.empty else None
+    player_card = make_player_card(player_id)
 
-    player_name = player['skaterFullName'].values[0]
-    player_position = player['positionCode'].values[0]
-    player_birth_date = player['birth_date'].values[0]
-    player_birth_country = player['birth_country'].values[0]
+
+    #player_name = player['skater_full_name'].values[0]
+    # player_position = player['position_code'].values[0]
+    # player_birth_date = player['birth_date'].values[0]
+    # player_birth_country = player['birth_country'].values[0]
 
     #player_events = data.get_player_events(player_id)
 
 
     return dbc.Container([
         dbc.Row([
-            dbc.Col(html.H1(f"{player_name} ({player_id})", className="text-center my-4 common-text"), width=8),
-            dbc.Col(html.Img(src=headshot_url, height="100px"), width=4) if headshot_url else []
-        ]),
-        dbc.Row([
-            dbc.Col([player_table], width=12)
+            dbc.Col(player_card, width=4, className="player-card"),
+            dbc.Col(f"{player_name}", width=8, className="player-details"),
+            dbc.Col(player_table, width=12, className="player-table"),
         ])
+    ])
+
+def make_player_card(player_id):
+    player = data.get_player(player_id)
+    if player.empty:
+        return html.Div("Player not found.")
+
+    player_roster_df = data.get_player_from_roster(player_id)
+    headshot_url = player_roster_df['headshot_url'].values[0] if not player_roster_df.empty else None
+
+    players_season = data.get_player_seasons(player_id)
+    players_goals_score = players_season.iloc[0]['goals_score']
+    players_defense_score = 67#players_season.iloc[0]['defense_score']
+    overall_score = 67
+
+    player_name = players_season.iloc[0]['skater_full_name']
+    player_position = player['position_code'].values[0]
+    player_birth_date = player['birth_date'].values[0]
+    player_birth_country = player['birth_country'].values[0]
+
+    return dbc.Container([
+        dbc.Row([
+            html.Img(src=headshot_url, className="card-image") if headshot_url else [],
+            html.H4(player_name, className="card-title"),
+            html.P(f"Offense: {players_goals_score}", className="card-text"),
+            html.P(f"Defense: {players_defense_score}", className="card-text"),
+            html.P(f"Overall: {overall_score}", className="card-text"),
+        ], className="card-body")
     ])

@@ -17,3 +17,6 @@
 2026-08-23 02:47:45 | SELECTW * FROM events where player_id = "8470613"
 2026-08-23 02:48:26 | SELECT * FROM events where player_id = "8470613"
 2026-08-23 02:48:28 | SELECT * FROM events where player_id = "8470613"
+2026-09-08 02:31:17 |             SELECT * FROM players
+            WHERE LOWER(first_name || ' ' || last_name) LIKE LOWER(sidney crosby)
+            LIMIT 25;

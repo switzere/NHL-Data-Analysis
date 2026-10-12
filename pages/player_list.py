@@ -38,7 +38,9 @@ def search_players_page(n_clicks, n_submit, query):
     player_links = []
     for _, row in players.iterrows():
         player_id = row['player_id']
-        name = row['skaterFullName']
+        first_name = row['first_name']
+        last_name = row['last_name']
+        name = f"{first_name} {last_name}"
         player_links.append(
             dbc.Row([
                 dbc.Col(dcc.Link(name, href=f"/NHLDashboard/player/{player_id}", className="h5"), width="auto")
