@@ -11,3 +11,4 @@ __pycache__/
 venv/
 
 restart_command.txt
+sql_console_queries.log
